@@ -14,7 +14,9 @@
             android:configChanges="orientation|keyboardHidden|screenSize"
             android:exported="true"
             android:label="@string/title_activity_main"
-            android:theme="@style/Theme.Boscage.Fullscreen">
+            android:theme="@style/Theme.Boscage.Fullscreen"
+            android:screenOrientation="landscape">
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
