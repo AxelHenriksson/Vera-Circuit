@@ -3,7 +3,9 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
+        <entry key="..\:/Users/Axel/AndroidStudioProjects/Boscage/app/src/main/res/drawable-v24/ic_launcher_foreground.xml" value="0.1296875" />
         <entry key="..\:/Users/Axel/AndroidStudioProjects/Boscage/app/src/main/res/layout/activity_main.xml" value="0.11676798378926039" />
+        <entry key="..\:/Users/Axel/AndroidStudioProjects/Boscage/app/src/main/res/layout/fragment_game.xml" value="0.1" />
         <entry key="..\:/Users/Axel/AndroidStudioProjects/Boscage/app/src/main/res/layout/fragment_splash.xml" value="0.12360688956433637" />
       </map>
     </option>
