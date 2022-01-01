@@ -4,100 +4,95 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.ColorSpace
+import android.opengl.GLES31
 import android.opengl.GLES31.*
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 
 import android.opengl.GLSurfaceView
-import android.opengl.Matrix
 import android.util.Log
 import java.lang.RuntimeException
 import java.nio.ByteBuffer
-import java.nio.FloatBuffer
 
 import java.util.*
 import kotlin.collections.HashMap
-import kotlin.math.*
 
 
 class GameRenderer(private val context: Context) : GLSurfaceView.Renderer {
-    companion object { private const val TAG = "GameRenderer" }
 
-    var isSurfaceCreated = false
+    fun add(mesh: Mesh) {
+        newMeshes.add(mesh)
+    }
+    private val newMeshes: ArrayList<Mesh> = ArrayList()
+    val meshes: ArrayList<Mesh> = ArrayList()
 
-//    fun add(mesh: Mesh) {
-//        newMeshes.add(mesh)
-//    }
-//    private val newMeshes: ArrayList<Mesh> = ArrayList()
-//    val meshes: ArrayList<Mesh> = ArrayList()
-//
-//    // Singleton rendering object functions
-//    /**
-//     * Keeps track of loaded bitmaps, returns the existing bitmap if the resource has been loaded, loads it if not
-//     *
-//     * @param bitmapRes Bitmap resource ID
-//     * @return The decoded bitmap in a ByteBuffer
-//     */
-//    fun getBitmap(bitmapRes: Int): Bitmap {
-//        return if (bitmaps.containsKey(bitmapRes) && bitmaps[bitmapRes] != null)
-//            bitmaps[bitmapRes]!!
-//        else {
-//            val opts = BitmapFactory.Options()
-//            opts.inScaled = false
-//            opts.inPreferredColorSpace = ColorSpace.get(ColorSpace.Named.SRGB)
-//            BitmapFactory.decodeResource(context.resources, bitmapRes, opts).also {
-//                bitmaps[bitmapRes] = it
-//                Log.d(TAG, "bitmap got with colorSpace: ${it.colorSpace}, width: ${it.width}, height: ${it.height}, allocationByteCount: ${it.allocationByteCount}, byteCount: ${it.byteCount}, turned into ByteBuffer")
-//            }
-//        }
-//    }
-//    private val bitmaps: HashMap<Int, Bitmap> = HashMap()
-//    fun getBitmapBuffer(bitmapRes: Int): ByteBuffer {
-//        return with (getBitmap(bitmapRes)) {
-//            ByteBuffer.allocateDirect(this.allocationByteCount).also {
-//                this.copyPixelsToBuffer(it)
-//                it.position(0)
-//            }
-//        }
-//    }
-//
-//    fun loadShader(shader: Shader): Int {
-//        if (shaders.containsKey(shader)) return shaders[shader]!!
-//
-//        // create empty OpenGL ES Program
-//        val id = glCreateProgram()
-//        Log.d(TAG, "getShaderProgram, program id: $id")
-//
-//        val vertexShader: Int = Utils.loadShaderFromResource(context, GL_VERTEX_SHADER, shader.vertexShaderRes)
-//        Log.d(TAG, "getShaderProgram, vertexShader id: $vertexShader")
-//        val fragmentShader: Int = Utils.loadShaderFromResource(context, GL_FRAGMENT_SHADER, shader.fragmentShaderRes)
-//        Log.d(TAG, "getShaderProgram, fragmentShader id: $fragmentShader")
-//
-//        // add the vertex shader to program
-//        glAttachShader(id, vertexShader)
-//        Log.d(TAG, "Attaching vertexShader $vertexShader")
-//
-//        // add the fragment shader to program
-//        glAttachShader(id, fragmentShader)
-//        Log.d(TAG, "Attaching fragmentShader $fragmentShader")
-//
-//        // creates OpenGL ES program executables
-//        glLinkProgram(id)
-//        Log.d(TAG, "Linking program $id")
-//
-//        val linkStatus = IntArray(1)
-//        glGetProgramiv(id, GL_LINK_STATUS, linkStatus, 0)
-//        if (linkStatus[0] != GL_TRUE) {
-//            glDeleteProgram(id)
-//            throw RuntimeException(
-//                "Could not link program: "
-//                        + glGetProgramInfoLog(id)
-//            )
-//        }
-//        shaders[shader] = id
-//        return id
-//    }
-//    private val shaders: HashMap<Shader, Int> = HashMap()
+    // Singleton rendering object functions
+    /**
+     * Keeps track of loaded bitmaps, returns the existing bitmap if the resource has been loaded, loads it if not
+     *
+     * @param bitmapRes Bitmap resource ID
+     * @return The decoded bitmap in a ByteBuffer
+     */
+    fun getBitmap(bitmapRes: Int): Bitmap {
+        return if (bitmaps.containsKey(bitmapRes) && bitmaps[bitmapRes] != null)
+            bitmaps[bitmapRes]!!
+        else {
+            val opts = BitmapFactory.Options()
+            opts.inScaled = false
+            opts.inPreferredColorSpace = ColorSpace.get(ColorSpace.Named.SRGB)
+            BitmapFactory.decodeResource(context.resources, bitmapRes, opts).also {
+                bitmaps[bitmapRes] = it
+                Log.d(TAG, "bitmap got with colorSpace: ${it.colorSpace}, width: ${it.width}, height: ${it.height}, allocationByteCount: ${it.allocationByteCount}, byteCount: ${it.byteCount}, turned into ByteBuffer")
+            }
+        }
+    }
+    private val bitmaps: HashMap<Int, Bitmap> = HashMap()
+    fun getBitmapBuffer(bitmapRes: Int): ByteBuffer {
+        return with (getBitmap(bitmapRes)) {
+            ByteBuffer.allocateDirect(this.allocationByteCount).also {
+                this.copyPixelsToBuffer(it)
+                it.position(0)
+            }
+        }
+    }
+
+    fun loadShader(shader: Shader): Int {
+        if (shaders.containsKey(shader)) return shaders[shader]!!
+
+        // create empty OpenGL ES Program
+        val id = glCreateProgram()
+        Log.d(TAG, "getShaderProgram, program id: $id")
+
+        val vertexShader: Int = loadShaderFromResource(context, GL_VERTEX_SHADER, shader.vertexShaderRes)
+        Log.d(TAG, "getShaderProgram, vertexShader id: $vertexShader")
+        val fragmentShader: Int = loadShaderFromResource(context, GL_FRAGMENT_SHADER, shader.fragmentShaderRes)
+        Log.d(TAG, "getShaderProgram, fragmentShader id: $fragmentShader")
+
+        // add the vertex shader to program
+        glAttachShader(id, vertexShader)
+        Log.d(TAG, "Attaching vertexShader $vertexShader")
+
+        // add the fragment shader to program
+        glAttachShader(id, fragmentShader)
+        Log.d(TAG, "Attaching fragmentShader $fragmentShader")
+
+        // creates OpenGL ES program executables
+        glLinkProgram(id)
+        Log.d(TAG, "Linking program $id")
+
+        val linkStatus = IntArray(1)
+        glGetProgramiv(id, GL_LINK_STATUS, linkStatus, 0)
+        if (linkStatus[0] != GL_TRUE) {
+            glDeleteProgram(id)
+            throw RuntimeException(
+                "Could not link program: "
+                        + glGetProgramInfoLog(id)
+            )
+        }
+        shaders[shader] = id
+        return id
+    }
+    private val shaders: HashMap<Shader, Int> = HashMap()
 
 
 
@@ -111,8 +106,6 @@ class GameRenderer(private val context: Context) : GLSurfaceView.Renderer {
         glDepthMask( true )
 
         //meshes.forEach { it.load() }
-
-        //isSurfaceCreated = true
     }
 
     private val PI: Float = 3.1415F
@@ -181,6 +174,40 @@ class GameRenderer(private val context: Context) : GLSurfaceView.Renderer {
 //        Matrix.frustumM(projectionMatrix, 0, -ratio*zoom, ratio*zoom, -1f*zoom, 1f*zoom, 1f, 50f)
 //        //Matrix.orthoM(projectionMatrix, 0, -ratio, ratio, -1f, 1f, 0.1f, 10f)
 //
+    }
+
+
+
+    companion object {
+        private const val TAG = "GameRenderer"
+
+        /**
+         * Creates and compiles an openGL shader into GLES memory from a string of shader code
+         * @param type          GLES shader type, typically GL_VERTEX_SHADER or GL_FRAGMENT_SHADER
+         * @param shaderCode    Bare string containing the shaders code
+         * @return The compiled shader's id
+         */
+        private fun loadShader(type: Int, shaderCode: String): Int {
+            // create a vertex shader type (GLES20.GL_VERTEX_SHADER)
+            // or a fragment shader type (GLES20.GL_FRAGMENT_SHADER)
+            val shader = GLES31.glCreateShader(type)
+
+            // add the source code to the shader and compile it
+            GLES31.glShaderSource(shader, shaderCode)
+            GLES31.glCompileShader(shader)
+
+            Log.d(TAG, "loadShader on $shaderCode returns $shader with infolog: ${GLES31.glGetShaderInfoLog(shader)}")
+            return shader
+        }
+
+        /**
+         * Reads a shader text file from a resource ID and creates and compiles the shader into GLES memory
+         * @param context       The current context, required to read resource
+         * @param type          GLES shader type, typically GL_VERTEX_SHADER or GL_FRAGMENT_SHADER
+         * @param resId         Resource ID of the shader text file
+         * @return The compiled shader's id
+         */
+        fun loadShaderFromResource(context: Context, type: Int, resId: Int): Int = loadShader(type, Utils.getStringFromResource(context, resId))
     }
 
 }

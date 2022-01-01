@@ -10,11 +10,11 @@ import kotlin.math.sqrt
 
 open class GameSurfaceView(context: Context, attr: AttributeSet) : GLSurfaceView(context) {
 
-    val renderer: GameRenderer
+    private val renderer: GameRenderer
 
     init {
 
-        // Create an OpenGL ES 2.0 context
+        // Create an OpenGL ES 3.0 context
         setEGLContextClientVersion(3)
         setEGLConfigChooser(8, 8, 8, 8, 16, 0);
 
@@ -23,7 +23,6 @@ open class GameSurfaceView(context: Context, attr: AttributeSet) : GLSurfaceView
         glDepthMask( true )
 
         renderer = GameRenderer(context)
-
 
         // Set the Renderer for drawing on the GLSurfaceView
         setRenderer(renderer)
