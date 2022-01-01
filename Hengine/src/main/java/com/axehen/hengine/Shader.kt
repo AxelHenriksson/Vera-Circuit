@@ -1,28 +1,36 @@
 package com.axehen.hengine
 
+import android.content.Context
 import android.opengl.GLES31.*
+import android.util.Log
 import com.axehen.hengine.*
 
 
-class Shader(val renderer: GameRenderer, val vertexShaderRes: Int, val fragmentShaderRes: Int, val cubeMap: Cubemap?, vararg var textures: Texture) {
+class Shader(private val renderer: GameRenderer, val vertexShaderRes: Int, val fragmentShaderRes: Int, val cubeMap: Cubemap?, var textures: Array<Texture>?) {
     val id: Int by lazy { renderer.loadShader(this) }
 
+    constructor(renderer: GameRenderer, vertexShaderRes: Int, fragmentShaderRes: Int, textures: Array<Texture>) : this(renderer, vertexShaderRes, fragmentShaderRes, null, textures)
+    constructor(renderer: GameRenderer, vertexShaderRes: Int, fragmentShaderRes: Int, cubeMap: Cubemap) : this(renderer, vertexShaderRes, fragmentShaderRes, cubeMap, null)
+    constructor(renderer: GameRenderer, vertexShaderRes: Int, fragmentShaderRes: Int) : this(renderer, vertexShaderRes, fragmentShaderRes, null, null)
+
     fun loadTextures() {
+        if (textures != null) {
 
-        for (i in textures.indices) {
+            for (i in textures!!.indices) {
 
-            if (textures[i].id != -1) continue
+                if (textures!![i].id != -1) continue
 
-            textures[i].load(GL_TEXTURE0 + i)
+                textures!![i].load(GL_TEXTURE0 + i)
 
-            glBindTexture(GL_TEXTURE_2D, i)
+                glBindTexture(GL_TEXTURE_2D, i)
 
-            // Insert texture into shader
-            val textureUniformLocation = glGetUniformLocation(id, textures[i].uniform)
+                // Insert texture into shader
+                val textureUniformLocation = glGetUniformLocation(id, textures!![i].uniform)
 
-            glUseProgram(id)
+                glUseProgram(id)
 
-            glUniform1i(textureUniformLocation, 0)
+                glUniform1i(textureUniformLocation, 0)
+            }
         }
 
         if (cubeMap != null) {
@@ -38,20 +46,49 @@ class Shader(val renderer: GameRenderer, val vertexShaderRes: Int, val fragmentS
 
             glUniform1i(cubeMapUniformLocation, 0)
 
-
         }
     }
 
     fun bindTextures() {
         glUseProgram(id)
 
-        for (i in textures.indices) {
-            // Bind textures
-            glActiveTexture(GL_TEXTURE0 + i)
-            glBindTexture(GL_TEXTURE_2D, textures[i].id)
-        }
+        if (textures != null)
+            for (i in textures!!.indices) {
+                glActiveTexture(GL_TEXTURE0 + i)
+                glBindTexture(GL_TEXTURE_2D, textures!![i].id)
+            }
 
         if (cubeMap != null) glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap.id)
+    }
+
+    companion object {
+        private const val TAG = "Shader.kt"
+
+        /**
+         * Creates and compiles an openGL shader into GLES memory from a string of shader code
+         * @param type          GLES shader type, typically GL_VERTEX_SHADER or GL_FRAGMENT_SHADER
+         * @param shaderCode    Bare string containing the shaders code
+         * @return The compiled shader's id
+         */
+        private fun loadShader(type: Int, shaderCode: String): Int {
+            val shader = glCreateShader(type)
+
+            // add the source code to the shader and compile it
+            glShaderSource(shader, shaderCode)
+            glCompileShader(shader)
+
+            Log.d(TAG, "loadShader on $shaderCode returns $shader with infolog: ${glGetShaderInfoLog(shader)}")
+            return shader
+        }
+
+        /**
+         * Reads a shader text file from a resource ID and creates and compiles the shader into GLES memory
+         * @param context       The current context, required to read resource
+         * @param type          GLES shader type, typically GL_VERTEX_SHADER or GL_FRAGMENT_SHADER
+         * @param resId         Resource ID of the shader text file
+         * @return The compiled shader's id
+         */
+        fun loadShaderFromResource(context: Context, type: Int, resId: Int): Int = loadShader(type, Utils.getStringFromResource(context, resId))
     }
 
 }

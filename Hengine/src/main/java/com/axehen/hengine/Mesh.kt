@@ -12,7 +12,7 @@ open class Mesh(
     vertexCoords: FloatArray,
     normals: FloatArray,
     texCoords: FloatArray,
-    val drawOrder: IntArray,  // TODO: Change this to IntArray and draw order buffer to IntBuffer
+    val drawOrder: IntArray,
     val color: FloatArray,
     val shader: Shader
 ) {
@@ -37,14 +37,12 @@ open class Mesh(
     private var normalBuffer: FloatBuffer =
         // (number of normal values * 4 bytes per float)
         allocateDirect(normals.size * 4).run {
+
             // use the device hardware's native byte order
             order(ByteOrder.nativeOrder())
 
-            // create a floating point buffer from the ByteBuffer
             asFloatBuffer().apply {
-                // add the coordinates to the FloatBuffer
                 put(normals)
-                // set the buffer to read the first coordinate
                 position(0)
             }
         }
@@ -55,17 +53,14 @@ open class Mesh(
             // use the device hardware's native byte order
             order(ByteOrder.nativeOrder())
 
-            // create a floating point buffer from the ByteBuffer
             asFloatBuffer().apply {
-                // add the coordinates to the FloatBuffer
                 put(texCoords)
-                // set the buffer to read the first coordinate
                 position(0)
             }
         }
 
     private val drawListBuffer: IntBuffer =
-        // (# of coordinate values * 2 bytes per short)
+        // (# of coordinate values * 4 bytes per int)
         allocateDirect(drawOrder.size * 4).run {
             order(ByteOrder.nativeOrder())
             asIntBuffer().apply {
