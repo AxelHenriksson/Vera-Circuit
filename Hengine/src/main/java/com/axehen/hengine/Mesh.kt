@@ -2,6 +2,7 @@ package com.axehen.hengine
 
 import android.opengl.GLES31.*
 import android.opengl.Matrix
+import android.util.Log
 import java.lang.IllegalArgumentException
 import java.nio.*
 import java.nio.ByteBuffer.allocateDirect

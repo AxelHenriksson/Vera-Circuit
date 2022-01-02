@@ -14,11 +14,12 @@ class Shader(private val renderer: GameRenderer, val vertexShaderRes: Int, val f
     constructor(renderer: GameRenderer, vertexShaderRes: Int, fragmentShaderRes: Int) : this(renderer, vertexShaderRes, fragmentShaderRes, null, null)
 
     fun loadTextures() {
+
         if (textures != null) {
 
             for (i in textures!!.indices) {
 
-                if (textures!![i].id != -1) continue
+                //if (textures!![i].id != -1) continue
 
                 textures!![i].load(GL_TEXTURE0 + i)
 
@@ -60,6 +61,10 @@ class Shader(private val renderer: GameRenderer, val vertexShaderRes: Int, val f
 
         if (cubeMap != null) glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap.id)
     }
+
+
+    override fun hashCode(): Int =
+        vertexShaderRes.hashCode() + fragmentShaderRes.hashCode() + (cubeMap?.hashCode() ?: 0) + (textures?.hashCode() ?: 0)
 
     companion object {
         private const val TAG = "Shader.kt"

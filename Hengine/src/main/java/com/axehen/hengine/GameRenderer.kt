@@ -70,67 +70,26 @@ class GameRenderer(private val context: Context) : GLSurfaceView.Renderer {
      * Loads a Shader object into GLES memory and returns its ID
      */
     fun loadShader(shader: Shader): Int {
-        if (shaders.containsKey(shader)) return shaders[shader]!!
+        return if (shaders.containsKey(shader)) shaders[shader]!!
+        else glCreateProgram().also { id ->
 
-        // create empty OpenGL ES Program
-        val id = glCreateProgram()
-        Log.d(TAG, "getShaderProgram, program id: $id")
+            val vertexShader: Int = Shader.loadShaderFromResource(context, GL_VERTEX_SHADER, shader.vertexShaderRes)
+            checkCompileErrors(vertexShader, GL_VERTEX_SHADER)
 
-        val vertexShader: Int = Shader.loadShaderFromResource(context, GL_VERTEX_SHADER, shader.vertexShaderRes)
-        Log.d(TAG, "getShaderProgram, vertexShader id: $vertexShader")
-        val fragmentShader: Int = Shader.loadShaderFromResource(context, GL_FRAGMENT_SHADER, shader.fragmentShaderRes)
-        Log.d(TAG, "getShaderProgram, fragmentShader id: $fragmentShader")
+            val fragmentShader: Int = Shader.loadShaderFromResource(context, GL_FRAGMENT_SHADER, shader.fragmentShaderRes)
+            checkCompileErrors(fragmentShader, GL_FRAGMENT_SHADER)
 
-        // add the vertex shader to program
-        glAttachShader(id, vertexShader)
-        Log.d(TAG, "Attaching vertexShader $vertexShader")
+            glAttachShader(id, vertexShader)
+            glAttachShader(id, fragmentShader)
 
-        // add the fragment shader to program
-        glAttachShader(id, fragmentShader)
-        Log.d(TAG, "Attaching fragmentShader $fragmentShader")
+            glLinkProgram(id)
+            checkLinkErrors(id)
 
-        // creates OpenGL ES program executables
-        glLinkProgram(id)
-        Log.d(TAG, "Linking program $id")
-
-        val linkStatus = IntArray(1)
-        glGetProgramiv(id, GL_LINK_STATUS, linkStatus, 0)
-        if (linkStatus[0] != GL_TRUE) {
-            glDeleteProgram(id)
-            throw RuntimeException(
-                "Could not link program: "
-                        + glGetProgramInfoLog(id)
-            )
+            shaders[shader] = id
         }
-        shaders[shader] = id
-        return id
     }
     private val shaders: HashMap<Shader, Int> = HashMap()
 
-
-    // Touch responses
-    /**
-     * Renderer single finger move event response
-     * @param dx change in finger x coordinate divided by screen resolution
-     * @param dy change in finger y coordinate divided by screen resolution
-     */
-    fun touchSwipe(dx: Float, dy: Float) {
-        eyePos.x = (eyePos.x - eyePos.z * zoom * dx)
-        eyePos.y = (eyePos.y + eyePos.z * zoom * dy)
-        lookAt.x = (lookAt.x - eyePos.z * zoom * dx)
-        lookAt.y = (lookAt.y + eyePos.z * zoom * dy)
-        updateView()
-    }
-
-    /**
-     * Renderer two finger pinch event response
-     * @param dDist change in finger distance divided by screen resolution
-     */
-    fun touchPinch(dDist: Float) {
-        eyePos.z = (eyePos.z - 7*dDist).coerceIn(0.5f, 6.5f)
-        updateView()
-        //renderer.zoom = (renderer.zoom - 0.0005f * dDist).coerceIn(0.1f, 1.0f)
-    }
 
     /** Updates view matrix and camPos uniforms in shaders from applicable instance variables */
     fun updateView() {
@@ -142,13 +101,6 @@ class GameRenderer(private val context: Context) : GLSurfaceView.Renderer {
             buffer.put(floatArrayOf(eyePos.x, eyePos.y, eyePos.z))
             buffer.position(0)
         }
-
-        // Update shader camera position and view matrix uniforms in all shaders
-        // This was not able to replace the same procedure in onDrawFrame, thus it is useless. If possible, moving this call out of onDrawFrame could be beneficial
-//        for (id in shaders.values) {
-//            glUniform3fv(glGetUniformLocation(id, "vCamPos"), 1, camPosBuffer)
-//            glUniformMatrix4fv(glGetUniformLocation(id, "mView"), 1, false, viewMatrix, 0)
-//        }
     }
     private val viewMatrix = FloatArray(16)
     @Volatile   //TODO: Check if Volatile is necessary
@@ -161,15 +113,9 @@ class GameRenderer(private val context: Context) : GLSurfaceView.Renderer {
     }
 
     private fun updateProjectionMatrix(width: Int, height: Int) {
-        // Update the projection matrix with new ratio and zoom
         val ratio = width.toFloat() / height.toFloat()
         Matrix.frustumM(projectionMatrix, 0, -ratio*zoom, ratio*zoom, -1f*zoom, 1f*zoom, 1f, 50f)
-        //Matrix.orthoM(projectionMatrix, 0, -ratio, ratio, -1f, 1f, 0.1f, 10f) // Orthographic projection matrix
-
-        // Pass the new projection matrix to the proj. matrix uniform of all shaders
-        // This call was not able to replace the same call in onDrawFrame, thus we probably should remove it
-//        for (id in shaders.values)
-//            glUniformMatrix4fv(glGetUniformLocation(id, "mProjection"), 1, false, projectionMatrix, 0)
+        // Matrix.orthoM(projectionMatrix, 0, -ratio, ratio, -1f, 1f, 0.1f, 10f) // Orthographic projection matrix
     }
     private val projectionMatrix = FloatArray(16)
     @Volatile
@@ -182,11 +128,11 @@ class GameRenderer(private val context: Context) : GLSurfaceView.Renderer {
         // Set the background color
         glClearColor(1.0f, 0f, 0f, 1.0f)
 
+        updateView()
+
         glEnable(GL_DEPTH_TEST)
         glDepthFunc(GL_LEQUAL)
         glDepthMask( true )
-
-        updateView()
 
         //meshes.forEach { it.load() }  There are no longer any meshes in 'meshes' on surface creation, only in 'newMeshes'
     }
@@ -201,10 +147,10 @@ class GameRenderer(private val context: Context) : GLSurfaceView.Renderer {
         // Redraw background color
         glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT)
 
-        // TODO: Remove or move, we do not want to recalculate matrices each frame, we may want to pass matrices to uniforms each frame tho
+        // TODO: See if it is possible to move uniform passing to a more seldom executed method
         shaders.values.forEach { id ->
+            glUseProgram(id)
             glUniformMatrix4fv(glGetUniformLocation(id, "mProjection"), 1, false, projectionMatrix, 0)
-
 
             glUniform3fv(glGetUniformLocation(id, "vCamPos"), 1, camPosBuffer)
             glUniformMatrix4fv(glGetUniformLocation(id, "mView"), 1, false, viewMatrix, 0)
@@ -224,6 +170,29 @@ class GameRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
     companion object {
         private const val TAG = "GameRenderer"
+
+        private fun checkCompileErrors(id: Int, type: Int) {
+            val compileStatus = IntArray(1)
+            glGetShaderiv(id, GL_COMPILE_STATUS, compileStatus, 0)
+            if (compileStatus[0] != GL_TRUE) {
+                glDeleteShader(id)
+                throw RuntimeException(
+                    "Could not compile ${if(type == GL_VERTEX_SHADER) "vertex shader" else if(type == GL_FRAGMENT_SHADER) "fragment shader" else "shader"}: "
+                            + glGetShaderInfoLog(id)
+                )
+            }
+        }
+        private fun checkLinkErrors(id: Int) {
+            val linkStatus = IntArray(1)
+            glGetProgramiv(id, GL_LINK_STATUS, linkStatus, 0)
+            if (linkStatus[0] != GL_TRUE) {
+                glDeleteProgram(id)
+                throw RuntimeException(
+                    "Could not link program: "
+                            + glGetProgramInfoLog(id)
+                )
+            }
+        }
     }
 
 }
