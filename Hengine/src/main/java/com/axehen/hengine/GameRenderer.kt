@@ -21,15 +21,15 @@ import kotlin.collections.HashMap
 
 class GameRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
-    /** Adds a mesh into the renderer's pipeline **/
-    fun add(mesh: Mesh) { newMeshes.add(mesh) }
-    fun addAll(vararg meshes: Mesh) { newMeshes.addAll(meshes) }
+    /** Adds a drawable into the renderer's pipeline **/
+    fun add(drawable: Drawable) { newDrawables.add(drawable) }
+    fun addAll(vararg drawables: Drawable) { newDrawables.addAll(drawables) }
 
 
-    // List of new meshes not yet added into the rendering pipeline
-    private val newMeshes: ArrayList<Mesh> = ArrayList()
-    // List of meshes in the rendering pipeline
-    private val meshes: ArrayList<Mesh> = ArrayList()
+    // List of new drawables not yet added into the rendering pipeline
+    private val newDrawables: ArrayList<Drawable> = ArrayList()
+    // List of drawables in the rendering pipeline
+    private val drawables: ArrayList<Drawable> = ArrayList()
 
     // Singleton rendering object functions
     /**
@@ -44,13 +44,20 @@ class GameRenderer(private val context: Context) : GLSurfaceView.Renderer {
             val opts = BitmapFactory.Options()
             opts.inScaled = false
             opts.inPreferredColorSpace = ColorSpace.get(ColorSpace.Named.SRGB)
-            BitmapFactory.decodeStream(context.assets.open(assetName) /*, opts*/ ).also {
+            BitmapFactory.decodeStream(context.assets.open(assetName) /*, opts*/ ).flip().also {
+
                 bitmaps[assetName] = it
                 Log.d(TAG, "bitmap got with colorSpace: ${it.colorSpace}, width: ${it.width}, height: ${it.height}, allocationByteCount: ${it.allocationByteCount}, byteCount: ${it.byteCount}, turned into ByteBuffer")
             }
         }
     }
     private val bitmaps: HashMap<String, Bitmap> = HashMap()
+
+    fun Bitmap.flip(): Bitmap {
+        val matrix = android.graphics.Matrix()
+        matrix.preScale(1f, -1f)
+        return Bitmap.createBitmap(this, 0, 0, width, height, matrix, true)
+    }
 
     /**
      * Returns a bytebuffer of a specified bitmap, either newly loaded or fetched from old
@@ -104,9 +111,9 @@ class GameRenderer(private val context: Context) : GLSurfaceView.Renderer {
     }
     private val viewMatrix = FloatArray(16)
     @Volatile   //TODO: Check if Volatile is necessary
-    var eyePos: Vec3 = Vec3(0f, -1f, 5f)
+    var eyePos: Vec3 = Vec3(0f, 0f, 1f)
     @Volatile   //TODO: Check if Volatile is necessary
-    var lookAt: Vec3 = Vec3(0f, 0f, 0.2f)
+    var lookAt: Vec3 = Vec3(0f, 0f, 0f)
     private val camPosBuffer: FloatBuffer = FloatBuffer.allocate(3).also { buffer ->
         buffer.put(floatArrayOf(eyePos.x, eyePos.y, eyePos.z))
         buffer.position(0)
@@ -134,14 +141,14 @@ class GameRenderer(private val context: Context) : GLSurfaceView.Renderer {
         glDepthFunc(GL_LEQUAL)
         glDepthMask( true )
 
-        //meshes.forEach { it.load() }  There are no longer any meshes in 'meshes' on surface creation, only in 'newMeshes'
+        //drawables.forEach { it.load() }  There are no longer any drawables in 'drawables' on surface creation, only in 'newMeshes'
     }
 
     override fun onDrawFrame(unused: GL10) {
-        while (newMeshes.isNotEmpty()) {
-            val mesh = newMeshes.removeFirst()
-            mesh.load()
-            meshes.add(mesh)
+        while (newDrawables.isNotEmpty()) {
+            val drawable = newDrawables.removeFirst()
+            drawable.load()
+            drawables.add(drawable)
         }
 
         // Redraw background color
@@ -157,7 +164,7 @@ class GameRenderer(private val context: Context) : GLSurfaceView.Renderer {
         }
 
 
-        meshes.forEach {it.draw()}
+        drawables.forEach {it.draw()}
     }
 
 

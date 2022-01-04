@@ -2,23 +2,20 @@ package com.axehen.hengine
 
 import android.opengl.GLES31.*
 import android.opengl.Matrix
-import android.util.Log
 import java.lang.IllegalArgumentException
 import java.nio.*
 import java.nio.ByteBuffer.allocateDirect
 
 
 open class Mesh(
-    var position: Vec3,
     vertexCoords: FloatArray,
     normals: FloatArray,
     texCoords: FloatArray,
     val drawOrder: IntArray,
-    val color: FloatArray,
     val shader: Shader
 ) {
 
-    private val coordsPerVertex = 3
+
 
     private var vertexBuffer: FloatBuffer =
         // (number of coordinate values * 4 bytes per float)
@@ -72,9 +69,9 @@ open class Mesh(
 
 
     init {
-        if (vertexCoords.size % coordsPerVertex != 0) throw IllegalArgumentException("Vertex coordinate count is not divisible by coordsPerVertex (${coordsPerVertex})")
-        if (normals.size % coordsPerVertex != 0) throw IllegalArgumentException("Vertex normal vector count is not divisible by coordsPerVertex (${coordsPerVertex})")
-        if (drawOrder.size % coordsPerVertex != 0) throw IllegalArgumentException("Draw order count is not divisible by coordsPerVertex (${coordsPerVertex})")
+        if (vertexCoords.size % COORDS_PER_VERTEX != 0) throw IllegalArgumentException("Vertex coordinate count is not divisible by coordsPerVertex (${COORDS_PER_VERTEX})")
+        if (normals.size % COORDS_PER_VERTEX != 0) throw IllegalArgumentException("Vertex normal vector count is not divisible by coordsPerVertex (${COORDS_PER_VERTEX})")
+        if (drawOrder.size % COORDS_PER_VERTEX != 0) throw IllegalArgumentException("Draw order count is not divisible by coordsPerVertex (${COORDS_PER_VERTEX})")
     }
 
 
@@ -82,9 +79,9 @@ open class Mesh(
         shader.loadTextures()
     }
 
-    private val vertexCount: Int = vertexCoords.size / coordsPerVertex
-    private val vertexStride: Int = coordsPerVertex * 4 // 4 bytes per vertex
-    fun draw() {
+    private val vertexCount: Int = vertexCoords.size / COORDS_PER_VERTEX
+    private val vertexStride: Int = COORDS_PER_VERTEX * 4 // 4 bytes per vertex
+    fun draw(position: Vec3) {
         shader.bindTextures()
 
         // Create model matrix and insert it into the mModel uniform of the mesh's shader
@@ -142,10 +139,6 @@ open class Mesh(
             )
         }
 
-        glGetUniformLocation(shader.id, "vColor").also { handle ->
-            glUniform4fv(handle, 1, color, 0)
-        }
-
         // Draw the triangle
         glDrawElements(GL_TRIANGLES, drawOrder.size, GL_UNSIGNED_INT, drawListBuffer)
 
@@ -155,5 +148,8 @@ open class Mesh(
         glDisableVertexAttribArray(texCoordsHandle)
     }
 
-    companion object { private val TAG = "hengine.Mesh.kt" }
+    companion object {
+        private val TAG = "hengine.Mesh.kt"
+        private const val COORDS_PER_VERTEX = 3
+    }
 }

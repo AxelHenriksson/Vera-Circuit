@@ -11,6 +11,9 @@ class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.
 
     init {
 
+        renderer.lookAt = Vec3(0f, 0f, 0.5f)
+        renderer.eyePos = Vec3(0f, -4f, 7.5f)
+        renderer.zoom = 0.4f
 
         val grassShader = Shader(
             renderer = renderer,
@@ -31,100 +34,91 @@ class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.
 
 
         renderer.add(
-            OBJMesh.parseOBJ(context, "models/house.obj", Vec3(8f, -8f, 0f), 4f, earthShader)
+            parseOBJMTL( "models/house", Vec3(8f, -8f, 0f), 4f)
         )
 
         renderer.add(
-            Mesh(
+            CompoundMesh(
                 position = Vec3(0f, 0f, 0f),
-                vertexCoords = floatArrayOf(
-                    -50f, -50f, 0f,
-                     50f, -50f, 0f,
-                     50f,   0f, 0f,
-                    -50f,   0f, 0f
+                arrayListOf(
+                    Mesh(
+                    vertexCoords = floatArrayOf(
+                        -50f, -50f, 0f,
+                         50f, -50f, 0f,
+                         50f,   0f, 0f,
+                        -50f,   0f, 0f
+                    ),
+                    normals = floatArrayOf(
+                        0f, 0f, 1f,
+                        0f, 0f, 1f,
+                        0f, 0f, 1f,
+                        0f, 0f, 1f,
+                    ),
+                    texCoords = floatArrayOf(
+                        -50f, -50f,
+                         50f, -50f,
+                         50f,   0f,
+                        -50f,   0f,
+                    ),
+                    drawOrder = intArrayOf(
+                        0, 1, 2,
+                        0, 2, 3
+                    ),
+                    shader = grassShader
                 ),
-                normals = floatArrayOf(
-                    0f, 0f, 1f,
-                    0f, 0f, 1f,
-                    0f, 0f, 1f,
-                    0f, 0f, 1f,
-                ),
-                texCoords = floatArrayOf(
-                    -50f, -50f,
-                     50f, -50f,
-                     50f,   0f,
-                    -50f,   0f,
-                ),
-                drawOrder = intArrayOf(
-                    0, 1, 2,
-                    0, 2, 3
-                ),
-                color = floatArrayOf(1f, 1f, 1f, 1f),
-                shader = grassShader
+                    Mesh(
+                        vertexCoords = floatArrayOf(
+                            -50f, 0f, 0f,
+                            50f, 0f, 0f,
+                            50f, 0f, 1f,
+                            -50f, 0f, 1f
+                        ),
+                        normals = floatArrayOf(
+                            0f, -1f, 0f,
+                            0f, -1f, 0f,
+                            0f, -1f, 0f,
+                            0f, -1f, 0f,
+                        ),
+                        texCoords = floatArrayOf(
+                            -50f, 0f,
+                            50f, 0f,
+                            50f, 1f,
+                            -50f, 1f,
+                        ),
+                        drawOrder = intArrayOf(
+                            0, 1, 2,
+                            0, 2, 3
+                        ),
+                        shader = earthShader
+                    ),
+                    Mesh(
+                        vertexCoords = floatArrayOf(
+                            -50f,  0f, 0f,
+                            50f,  0f, 0f,
+                            50f, 50f, 0f,
+                            -50f, 50f, 0f
+                        ),
+                        normals = floatArrayOf(
+                            0f, 0f, 1f,
+                            0f, 0f, 1f,
+                            0f, 0f, 1f,
+                            0f, 0f, 1f,
+                        ),
+                        texCoords = floatArrayOf(
+                            -50f,  0f,
+                            50f,  0f,
+                            50f, 50f,
+                            -50f, 50f,
+                        ),
+                        drawOrder = intArrayOf(
+                            0, 1, 2,
+                            0, 2, 3
+                        ),
+                        shader = grassShader
+                    )
             )
         )
-
-        renderer.add(
-            Mesh(
-                position = Vec3(0f, 0f, 0f),
-                vertexCoords = floatArrayOf(
-                    -50f, 0f, 0f,
-                    50f, 0f, 0f,
-                    50f, 0f, 1f,
-                    -50f, 0f, 1f
-                ),
-                normals = floatArrayOf(
-                    0f, -1f, 0f,
-                    0f, -1f, 0f,
-                    0f, -1f, 0f,
-                    0f, -1f, 0f,
-                ),
-                texCoords = floatArrayOf(
-                    -50f, 0f,
-                    50f, 0f,
-                    50f, 1f,
-                    -50f, 1f,
-                ),
-                drawOrder = intArrayOf(
-                    0, 1, 2,
-                    0, 2, 3
-                ),
-                color = floatArrayOf(1f, 1f, 1f, 1f),
-                shader = earthShader
-            )
         )
-
-        renderer.add(
-            Mesh(
-                position = Vec3(0f, 0f, 1f),
-                vertexCoords = floatArrayOf(
-                    -50f,  0f, 0f,
-                     50f,  0f, 0f,
-                     50f, 50f, 0f,
-                    -50f, 50f, 0f
-                ),
-                normals = floatArrayOf(
-                    0f, 0f, 1f,
-                    0f, 0f, 1f,
-                    0f, 0f, 1f,
-                    0f, 0f, 1f,
-                ),
-                texCoords = floatArrayOf(
-                    -50f,  0f,
-                     50f,  0f,
-                     50f, 50f,
-                    -50f, 50f,
-                ),
-                drawOrder = intArrayOf(
-                    0, 1, 2,
-                    0, 2, 3
-                ),
-                color = floatArrayOf(1f, 1f, 1f, 1f),
-                shader = grassShader
-            )
-        )
-
-
 
 
         renderer.addAll(
@@ -196,7 +190,7 @@ class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.
      */
     private fun touchPinch(dDist: Float) {
         with (renderer) {
-            eyePos.z = (eyePos.z - 7 * dDist).coerceIn(2f, 6f)
+            eyePos.z = (eyePos.z - 7 * dDist).coerceIn(3f, 6f)
             updateView()
             // zoom = (zoom - 0.0005f * dDist).coerceIn(0.1f, 1.0f)
         }

@@ -3,7 +3,6 @@ package com.axehen.hengine
 import android.content.Context
 import android.opengl.GLES31.*
 import android.util.Log
-import com.axehen.hengine.*
 
 
 class Shader(private val renderer: GameRenderer, val shaderAsset: String, val cubeMap: Cubemap?, var textures: Array<Texture>?) {
@@ -88,10 +87,10 @@ class Shader(private val renderer: GameRenderer, val shaderAsset: String, val cu
          * Reads a shader text file from an asset file and creates and compiles the shader into GLES memory
          * @param context       The current context, required to read resource
          * @param type          GLES shader type, typically GL_VERTEX_SHADER or GL_FRAGMENT_SHADER
-         * @param assetFileName      Name of the shader text file
+         * @param asset         Name of the shader .vert and .frag files without extension
          * @return              The compiled shader's id
          */
-        fun loadShaderFromAsset(context: Context, type: Int, assetFileName: String): Int = loadShader(type, Utils.getStringFromAsset(context, assetFileName))
+        fun loadShaderFromAsset(context: Context, type: Int, asset: String): Int = loadShader(type, Utils.getStringFromAsset(context, asset))
     }
 
 }
