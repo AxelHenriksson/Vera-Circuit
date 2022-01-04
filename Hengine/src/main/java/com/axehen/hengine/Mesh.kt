@@ -81,24 +81,20 @@ open class Mesh(
 
     private val vertexCount: Int = vertexCoords.size / COORDS_PER_VERTEX
     private val vertexStride: Int = COORDS_PER_VERTEX * 4 // 4 bytes per vertex
-    fun draw(position: Vec3) {
+    fun draw(position: Vec3, rotation: Rotation) {
         shader.bindTextures()
 
         // Create model matrix and insert it into the mModel uniform of the mesh's shader
         FloatArray(16).let { modelMatrix ->
             Matrix.setIdentityM(modelMatrix, 0)
             Matrix.translateM(modelMatrix, 0, position.x, position.y, position.z)
-
+            Matrix.rotateM(modelMatrix, 0, rotation.a, rotation.x, rotation.y, rotation.z)
             glUniformMatrix4fv( glGetUniformLocation(shader.id, "mModel") , 1, false, modelMatrix, 0)
         }
 
         // get handle to vertex shader's vPosition member. positionHandle is later used to disable its attribute array
         val positionHandle = glGetAttribLocation(shader.id, "vPosition").also { handle ->
-
-            // Enable a handle to the triangle vertices
             glEnableVertexAttribArray(handle)
-
-            // Prepare the triangle coordinate data
             glVertexAttribPointer(
                 handle,
                 3,

@@ -5,10 +5,7 @@ import android.opengl.GLES31.*
 import android.opengl.GLSurfaceView
 import android.util.AttributeSet
 import android.util.Log
-import android.view.MotionEvent
 import java.util.ArrayList
-import kotlin.math.pow
-import kotlin.math.sqrt
 
 @Suppress("LeakingThis")
 open class GameSurfaceView(context: Context, attr: AttributeSet) : GLSurfaceView(context) {
@@ -45,7 +42,7 @@ open class GameSurfaceView(context: Context, attr: AttributeSet) : GLSurfaceView
 
     class NotFoundException(msg: String) : Exception(msg)
 
-    fun parseOBJMTL(asset: String, position: Vec3, scale: Float): CompoundMesh {
+    fun parseOBJMTL(asset: String, position: Vec3, rotation: Rotation, scale: Float): CompoundMesh {
         val objString = Utils.getStringFromAsset(context, "$asset.obj")
         val mtlString = Utils.getStringFromAsset(context, "$asset.mtl")
         Log.d(TAG, "parsing obj $asset: \n $objString \n\n and mtl: \n $mtlString \n\n")
@@ -114,7 +111,7 @@ open class GameSurfaceView(context: Context, attr: AttributeSet) : GLSurfaceView
         }
         meshList.add(createMesh(faceList, getShaderFromMTL(mtlString, activeMaterial)))
 
-        return CompoundMesh(position, meshList)
+        return CompoundMesh(position, rotation, meshList)
 
         // Log.d(TAG, "${objString.lines().size} lines parsed in OBJ file, ${posList.size} positions added, ${texCoordList.size} texCoords added, ${normalList.size} normals added, ${faceList.size} faces added")
     }
@@ -143,7 +140,7 @@ open class GameSurfaceView(context: Context, attr: AttributeSet) : GLSurfaceView
         ))
     }
 
-    fun parseOBJ(asset: String, position: Vec3, scale: Float, shader: Shader): Mesh {
+    fun parseOBJ(asset: String, scale: Float, shader: Shader): Mesh {
         val objString = Utils.getStringFromAsset(context, "$asset.obj")
 
         val posList = ArrayList<Position>()

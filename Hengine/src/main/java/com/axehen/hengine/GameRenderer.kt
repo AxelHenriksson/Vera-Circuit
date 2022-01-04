@@ -44,7 +44,7 @@ class GameRenderer(private val context: Context) : GLSurfaceView.Renderer {
             val opts = BitmapFactory.Options()
             opts.inScaled = false
             opts.inPreferredColorSpace = ColorSpace.get(ColorSpace.Named.SRGB)
-            BitmapFactory.decodeStream(context.assets.open(assetName) /*, opts*/ ).flip().also {
+            BitmapFactory.decodeStream(context.assets.open(assetName) /*, opts*/ ).flip(1f, -1f).also {
 
                 bitmaps[assetName] = it
                 Log.d(TAG, "bitmap got with colorSpace: ${it.colorSpace}, width: ${it.width}, height: ${it.height}, allocationByteCount: ${it.allocationByteCount}, byteCount: ${it.byteCount}, turned into ByteBuffer")
@@ -53,9 +53,9 @@ class GameRenderer(private val context: Context) : GLSurfaceView.Renderer {
     }
     private val bitmaps: HashMap<String, Bitmap> = HashMap()
 
-    fun Bitmap.flip(): Bitmap {
+    private fun Bitmap.flip(x: Float, y: Float): Bitmap {
         val matrix = android.graphics.Matrix()
-        matrix.preScale(1f, -1f)
+        matrix.preScale(x, y)
         return Bitmap.createBitmap(this, 0, 0, width, height, matrix, true)
     }
 

@@ -33,20 +33,24 @@ class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.
         )
 
 
-        renderer.add(
-            parseOBJMTL( "models/house", Vec3(8f, -8f, 0f), 4f)
+        renderer.addAll(
+            parseOBJMTL( "models/house", Vec3(-3f, 3f, 0f), Rotation(0f, 0f, 0f, 1f), 4f),
+            parseOBJMTL( "models/house", Vec3(3f, 3f, 0f), Rotation(-90f, 0f, 0f, 1f), 4f),
+            parseOBJMTL( "models/house", Vec3(3f, -3f, 0f), Rotation(180f, 0f, 0f, 1f), 4f),
+            parseOBJMTL( "models/house", Vec3(-3f, -3f, 0f), Rotation(90f, 0f, 0f, 1f), 4f),
         )
 
         renderer.add(
             CompoundMesh(
                 position = Vec3(0f, 0f, 0f),
+                rotation = Rotation(0f, 0f, 0f, 1f),
                 arrayListOf(
                     Mesh(
                     vertexCoords = floatArrayOf(
                         -50f, -50f, 0f,
                          50f, -50f, 0f,
-                         50f,   0f, 0f,
-                        -50f,   0f, 0f
+                         50f,   10f, 0f,
+                        -50f,   10f, 0f
                     ),
                     normals = floatArrayOf(
                         0f, 0f, 1f,
@@ -57,8 +61,8 @@ class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.
                     texCoords = floatArrayOf(
                         -50f, -50f,
                          50f, -50f,
-                         50f,   0f,
-                        -50f,   0f,
+                         50f,   10f,
+                        -50f,   10f,
                     ),
                     drawOrder = intArrayOf(
                         0, 1, 2,
@@ -68,10 +72,10 @@ class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.
                 ),
                     Mesh(
                         vertexCoords = floatArrayOf(
-                            -50f, 0f, 0f,
-                            50f, 0f, 0f,
-                            50f, 0f, 1f,
-                            -50f, 0f, 1f
+                            -50f, 10f, 0f,
+                            50f, 10f, 0f,
+                            50f, 11f, 1f,
+                            -50f, 11f, 1f
                         ),
                         normals = floatArrayOf(
                             0f, -1f, 0f,
@@ -93,10 +97,10 @@ class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.
                     ),
                     Mesh(
                         vertexCoords = floatArrayOf(
-                            -50f,  0f, 0f,
-                            50f,  0f, 0f,
-                            50f, 50f, 0f,
-                            -50f, 50f, 0f
+                            -50f,  11f, 1f,
+                            50f,  11f, 1f,
+                            50f, 50f, 1f,
+                            -50f, 50f, 1f
                         ),
                         normals = floatArrayOf(
                             0f, 0f, 1f,
@@ -105,8 +109,8 @@ class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.
                             0f, 0f, 1f,
                         ),
                         texCoords = floatArrayOf(
-                            -50f,  0f,
-                            50f,  0f,
+                            -50f,  11f,
+                            50f,  11f,
                             50f, 50f,
                             -50f, 50f,
                         ),
@@ -117,13 +121,14 @@ class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.
                         shader = grassShader
                     )
             )
-        )
+            )
         )
 
 
         renderer.addAll(
             Cube(
                 position = Vec3(0.5f, -2.5f, 0f),
+                rotation = Rotation(45f, 0f, 0f, 1f),
                 v1 = Vec3(-0.5f, -0.5f, 0f),
                 v2 = Vec3( 0.5f,  0.5f, 0.5f),
                 shader = earthShader

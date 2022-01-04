@@ -3,9 +3,10 @@ package com.axehen.hengine
 import kotlin.math.max
 import kotlin.math.min
 
-class Cube(position: Vec3, v1: Vec3, v2: Vec3, shader: Shader)
+class Cube(position: Vec3, rotation: Rotation, v1: Vec3, v2: Vec3, shader: Shader)
     : CompoundMesh(
     position = position,
+    rotation = rotation,
     arrayListOf(Mesh(
         vertexCoords = floatArrayOf(
             min(v1.x,v2.x), min(v1.y,v2.y), max(v1.z,v2.z),
