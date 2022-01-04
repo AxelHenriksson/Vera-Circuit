@@ -14,22 +14,25 @@ class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.
 
         val grassShader = Shader(
             renderer = renderer,
-            vertexShaderRes = R.raw.textured_vert,
-            fragmentShaderRes = R.raw.textured_frag,
+            shaderAsset = "shaders/textured",
             textures = arrayOf(
-                Texture(renderer, R.drawable.grass, "tex0")
+                Texture(renderer, "textures/grass.png", "tex0"),
+                Texture(renderer, "textures/earth.png", "tex_ao")
             )
         )
         val earthShader = Shader(
             renderer = renderer,
-            vertexShaderRes = R.raw.textured_vert,
-            fragmentShaderRes = R.raw.textured_frag,
+            shaderAsset = "shaders/textured",
             textures = arrayOf(
-                Texture(renderer, R.drawable.earth, "tex0")
+                Texture(renderer, "textures/earth.png", "tex0"),
+                Texture(renderer, "textures/earth.png", "tex_ao")
             )
         )
 
 
+        renderer.add(
+            OBJMesh.parseOBJ(context, "models/house.obj", Vec3(8f, -8f, 0f), 4f, earthShader)
+        )
 
         renderer.add(
             Mesh(
@@ -130,12 +133,6 @@ class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.
                 v1 = Vec3(-0.5f, -0.5f, 0f),
                 v2 = Vec3( 0.5f,  0.5f, 0.5f),
                 shader = earthShader
-            ),
-            Cube(
-                position = Vec3(0.5f, 2.5f, 0f),
-                v1 = Vec3(-0.5f, -0.5f, 0f),
-                v2 = Vec3( 0.5f,  0.5f, 0.5f),
-                shader = grassShader
             )
         )
     }

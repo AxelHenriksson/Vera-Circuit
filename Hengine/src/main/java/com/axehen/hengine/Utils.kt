@@ -39,4 +39,14 @@ class Utils { companion object {
             return ret
         }
 
-} }
+        @Throws(Exception::class)
+        fun getStringFromAsset(context: Context, shaderAsset: String): String {
+            val fin = context.assets.open(shaderAsset)
+            val ret = convertStreamToString(fin)
+            //Make sure you close all streams.
+            fin.close()
+            return ret
+        }
+
+    }
+}

@@ -33,32 +33,32 @@ class GameRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
     // Singleton rendering object functions
     /**
-     * Keeps track of loaded bitmaps, returns the existing bitmap if the resource has been loaded, loads it if not
-     * @param bitmapRes Bitmap resource ID
+     * Keeps track of loaded bitmaps, returns the existing bitmap if the asset has been loaded, loads it if not
+     * @param assetName Bitmap asset file name
      * @return The decoded Bitmap object
      */
-    fun getBitmap(bitmapRes: Int): Bitmap {
-        return if (bitmaps.containsKey(bitmapRes) && bitmaps[bitmapRes] != null)
-            bitmaps[bitmapRes]!!
+    fun getBitmap(assetName: String): Bitmap {
+        return if (bitmaps.containsKey(assetName) && bitmaps[assetName] != null)
+            bitmaps[assetName]!!
         else {
             val opts = BitmapFactory.Options()
             opts.inScaled = false
             opts.inPreferredColorSpace = ColorSpace.get(ColorSpace.Named.SRGB)
-            BitmapFactory.decodeResource(context.resources, bitmapRes, opts).also {
-                bitmaps[bitmapRes] = it
+            BitmapFactory.decodeStream(context.assets.open(assetName) /*, opts*/ ).also {
+                bitmaps[assetName] = it
                 Log.d(TAG, "bitmap got with colorSpace: ${it.colorSpace}, width: ${it.width}, height: ${it.height}, allocationByteCount: ${it.allocationByteCount}, byteCount: ${it.byteCount}, turned into ByteBuffer")
             }
         }
     }
-    private val bitmaps: HashMap<Int, Bitmap> = HashMap()
+    private val bitmaps: HashMap<String, Bitmap> = HashMap()
 
     /**
      * Returns a bytebuffer of a specified bitmap, either newly loaded or fetched from old
-     * @param bitmapRes Bitmap resource ID
+     * @param assetName Bitmap asset file name
      * @return The decoded bitmap in a ByteBuffer
      */
-    fun getBitmapBuffer(bitmapRes: Int): ByteBuffer {
-        return with (getBitmap(bitmapRes)) {
+    fun getBitmapBuffer(assetName: String): ByteBuffer {
+        return with (getBitmap(assetName)) {
             ByteBuffer.allocateDirect(this.allocationByteCount).also {
                 this.copyPixelsToBuffer(it)
                 it.position(0)
@@ -73,10 +73,10 @@ class GameRenderer(private val context: Context) : GLSurfaceView.Renderer {
         return if (shaders.containsKey(shader)) shaders[shader]!!
         else glCreateProgram().also { id ->
 
-            val vertexShader: Int = Shader.loadShaderFromResource(context, GL_VERTEX_SHADER, shader.vertexShaderRes)
+            val vertexShader: Int = Shader.loadShaderFromAsset(context, GL_VERTEX_SHADER, shader.shaderAsset + ".vert")
             checkCompileErrors(vertexShader, GL_VERTEX_SHADER)
 
-            val fragmentShader: Int = Shader.loadShaderFromResource(context, GL_FRAGMENT_SHADER, shader.fragmentShaderRes)
+            val fragmentShader: Int = Shader.loadShaderFromAsset(context, GL_FRAGMENT_SHADER, shader.shaderAsset + ".frag")
             checkCompileErrors(fragmentShader, GL_FRAGMENT_SHADER)
 
             glAttachShader(id, vertexShader)

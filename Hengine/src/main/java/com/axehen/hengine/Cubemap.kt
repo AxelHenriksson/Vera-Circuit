@@ -11,9 +11,9 @@ import java.nio.IntBuffer
  * @param faceResources Array of 6 face resource IDs in the order: posX, negX, posY, negY, posZ, negZ
  * @param uniform The shader uniform to which hte cubemap is mapped
  */
-data class Cubemap(val renderer: GameRenderer, val faceResources: IntArray, val uniform: String) {
-    val bitmaps: Array<Bitmap> = Array(6) { renderer.getBitmap(faceResources[it]) }
-    val buffers: Array<ByteBuffer> = Array(6) { renderer.getBitmapBuffer(faceResources[it]) }
+data class Cubemap(val renderer: GameRenderer, val faceAssets: Array<String>, val uniform: String) {
+    val bitmaps: Array<Bitmap> = Array(6) { renderer.getBitmap(faceAssets[it]) }
+    val buffers: Array<ByteBuffer> = Array(6) { renderer.getBitmapBuffer(faceAssets[it]) }
 
     var id: Int = -1
     val format: Int = GL_RGBA
@@ -45,7 +45,7 @@ data class Cubemap(val renderer: GameRenderer, val faceResources: IntArray, val 
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE)
 
-        for(i in faceResources.indices) {
+        for(i in faceAssets.indices) {
 
             glTexImage2D(
                 GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,

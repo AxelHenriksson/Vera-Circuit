@@ -7,9 +7,9 @@ import java.nio.ByteBuffer
 import java.nio.IntBuffer
 
 
-data class Texture(val renderer: GameRenderer, val textureRes: Int, val uniform: String) {
-    val bitmap: Bitmap by lazy { renderer.getBitmap(textureRes) }
-    val buffer: ByteBuffer by lazy { renderer.getBitmapBuffer(textureRes) }
+data class Texture(val renderer: GameRenderer, val assetName: String, val uniform: String) {
+    val bitmap: Bitmap by lazy { renderer.getBitmap(assetName) }
+    val buffer: ByteBuffer by lazy { renderer.getBitmapBuffer(assetName) }
 
     val format: Int = GL_RGBA
     val width by lazy { bitmap.width }

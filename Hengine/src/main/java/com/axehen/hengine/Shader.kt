@@ -6,12 +6,10 @@ import android.util.Log
 import com.axehen.hengine.*
 
 
-class Shader(private val renderer: GameRenderer, val vertexShaderRes: Int, val fragmentShaderRes: Int, val cubeMap: Cubemap?, var textures: Array<Texture>?) {
+class Shader(private val renderer: GameRenderer, val shaderAsset: String, val cubeMap: Cubemap?, var textures: Array<Texture>?) {
     val id: Int by lazy { renderer.loadShader(this) }
 
-    constructor(renderer: GameRenderer, vertexShaderRes: Int, fragmentShaderRes: Int, textures: Array<Texture>) : this(renderer, vertexShaderRes, fragmentShaderRes, null, textures)
-    constructor(renderer: GameRenderer, vertexShaderRes: Int, fragmentShaderRes: Int, cubeMap: Cubemap) : this(renderer, vertexShaderRes, fragmentShaderRes, cubeMap, null)
-    constructor(renderer: GameRenderer, vertexShaderRes: Int, fragmentShaderRes: Int) : this(renderer, vertexShaderRes, fragmentShaderRes, null, null)
+    constructor(renderer: GameRenderer, shaderAsset: String, textures: Array<Texture>) : this(renderer, shaderAsset, null, textures)
 
     fun loadTextures() {
 
@@ -64,7 +62,7 @@ class Shader(private val renderer: GameRenderer, val vertexShaderRes: Int, val f
 
 
     override fun hashCode(): Int =
-        vertexShaderRes.hashCode() + fragmentShaderRes.hashCode() + (cubeMap?.hashCode() ?: 0) + (textures?.hashCode() ?: 0)
+        shaderAsset.hashCode() + (cubeMap?.hashCode() ?: 0) + (textures?.hashCode() ?: 0)
 
     companion object {
         private const val TAG = "Shader.kt"
@@ -87,13 +85,13 @@ class Shader(private val renderer: GameRenderer, val vertexShaderRes: Int, val f
         }
 
         /**
-         * Reads a shader text file from a resource ID and creates and compiles the shader into GLES memory
+         * Reads a shader text file from an asset file and creates and compiles the shader into GLES memory
          * @param context       The current context, required to read resource
          * @param type          GLES shader type, typically GL_VERTEX_SHADER or GL_FRAGMENT_SHADER
-         * @param resId         Resource ID of the shader text file
-         * @return The compiled shader's id
+         * @param assetFileName      Name of the shader text file
+         * @return              The compiled shader's id
          */
-        fun loadShaderFromResource(context: Context, type: Int, resId: Int): Int = loadShader(type, Utils.getStringFromResource(context, resId))
+        fun loadShaderFromAsset(context: Context, type: Int, assetFileName: String): Int = loadShader(type, Utils.getStringFromAsset(context, assetFileName))
     }
 
 }
