@@ -31,26 +31,18 @@ open class GameSurfaceView(context: Context, attr: AttributeSet) : GLSurfaceView
 
     }
 
-
-
-    private data class Position(val x: Float, val y: Float, val z: Float) {
-        operator fun times(factor: Float) = Position(factor * x, factor * y, factor * z)
-    }
-    private data class TexCoord(val u: Float, val v: Float)
-    private data class Normal(val x: Float, val y: Float, val z: Float)
-    private data class Vertex(val pos: Position, val texCoord: TexCoord, val normal: Normal)
+    private data class Vertex(val pos: Vec3, val texCoord: Vec2, val normal: Vec3)
 
     class NotFoundException(msg: String) : Exception(msg)
 
-    fun parseOBJMTL(asset: String, position: Vec3, rotation: Rotation, scale: Float): CompoundMesh {
+    fun parseOBJMTL(asset: String, scale: Float): List<Mesh> {
         val objString = Utils.getStringFromAsset(context, "$asset.obj")
         val mtlString = Utils.getStringFromAsset(context, "$asset.mtl")
         Log.d(TAG, "parsing obj $asset: \n $objString \n\n and mtl: \n $mtlString \n\n")
 
-
-        val posList         = ArrayList<Position>()
-        val texCoordList    = ArrayList<TexCoord>()
-        val normalList      = ArrayList<Normal>()
+        val posList         = ArrayList<Vec3>()
+        val texCoordList    = ArrayList<Vec2>()
+        val normalList      = ArrayList<Vec3>()
         val faceList        = ArrayList<Array<Vertex>>()
         val meshList        = ArrayList<Mesh>()
         var activeMaterial  = ""
@@ -60,20 +52,20 @@ open class GameSurfaceView(context: Context, attr: AttributeSet) : GLSurfaceView
             line.split(" ").let { words ->
                 when (words[0]) {
                     "v"  -> posList.add(
-                        Position(
+                        Vec3(
                             words[1].toFloat(),
                             words[2].toFloat(),
                             words[3].toFloat()
                         )
                     )
                     "vt" -> texCoordList.add(
-                        TexCoord(
+                        Vec2(
                             words[1].toFloat(),
                             words[2].toFloat()
                         )
                     )
                     "vn" -> normalList.add(
-                        Normal(
+                        Vec3(
                             words[1].toFloat(),
                             words[2].toFloat(),
                             words[3].toFloat()
@@ -82,7 +74,7 @@ open class GameSurfaceView(context: Context, attr: AttributeSet) : GLSurfaceView
                     "f"  -> {
                         faceList.add(Array(/*words.size - 1*/ 3) {      // With size = 3 we only add triangles, leaving holes in the mesh if there are more than 3 vertices per face. Having size = words.size - 1, i.e. add all vertices of every face, means we get an error further down. As long as we triangulate the mesh before import we should not get holes in the mesh by using size 3.
                             val indices = words[it+1].split("/")
-                            val texCoord = if (indices[1].isNotEmpty()) texCoordList[indices[1].toInt()-1] else TexCoord(
+                            val texCoord = if (indices[1].isNotEmpty()) texCoordList[indices[1].toInt()-1] else Vec2(
                                 0f,
                                 0f
                             )
@@ -111,7 +103,7 @@ open class GameSurfaceView(context: Context, attr: AttributeSet) : GLSurfaceView
         }
         meshList.add(createMesh(faceList, getShaderFromMTL(mtlString, activeMaterial)))
 
-        return CompoundMesh(position, rotation, meshList)
+        return meshList
 
         // Log.d(TAG, "${objString.lines().size} lines parsed in OBJ file, ${posList.size} positions added, ${texCoordList.size} texCoords added, ${normalList.size} normals added, ${faceList.size} faces added")
     }
@@ -143,22 +135,22 @@ open class GameSurfaceView(context: Context, attr: AttributeSet) : GLSurfaceView
     fun parseOBJ(asset: String, scale: Float, shader: Shader): Mesh {
         val objString = Utils.getStringFromAsset(context, "$asset.obj")
 
-        val posList = ArrayList<Position>()
-        val texCoordList    = ArrayList<TexCoord>()
-        val normalList      = ArrayList<Normal>()
+        val posList = ArrayList<Vec3>()
+        val texCoordList    = ArrayList<Vec2>()
+        val normalList      = ArrayList<Vec3>()
         val faceList        = ArrayList<Array<Vertex>>()
 
         for(line in objString.lines()) {
 
             line.split(" ").let { words ->
                 when (words[0]) {
-                    "v"  -> posList.add(Position(words[1].toFloat(), words[2].toFloat(), words[3].toFloat()))
-                    "vt" -> texCoordList.add(TexCoord(words[1].toFloat(), words[2].toFloat()))
-                    "vn" -> normalList.add(Normal(words[1].toFloat(), words[2].toFloat(), words[3].toFloat()))
+                    "v"  -> posList.add(Vec3(words[1].toFloat(), words[2].toFloat(), words[3].toFloat()))
+                    "vt" -> texCoordList.add(Vec2(words[1].toFloat(), words[2].toFloat()))
+                    "vn" -> normalList.add(Vec3(words[1].toFloat(), words[2].toFloat(), words[3].toFloat()))
                     "f"  -> {
                         faceList.add(Array(/*words.size - 1*/ 3) {      // With size = 3 we only add triangles, leaving holes in the mesh if there are more than 3 vertices per face. Having size = words.size - 1, i.e. add all vertices of every face, means we get an error further down. As long as we triangulate the mesh before import we should not get holes in the mesh by using size 3.
                             val indices = words[it+1].split("/")
-                            val texCoord = if (indices[1].isNotEmpty()) texCoordList[indices[1].toInt()-1] else TexCoord(0f, 0f)
+                            val texCoord = if (indices[1].isNotEmpty()) texCoordList[indices[1].toInt()-1] else Vec2(0f, 0f)
                             Vertex(
                                 posList[indices[0].toInt() - 1] * scale,
                                 texCoord,
@@ -190,8 +182,8 @@ open class GameSurfaceView(context: Context, attr: AttributeSet) : GLSurfaceView
                 normals[3*index + 1] = vertex.normal.y
                 normals[3*index + 2] = vertex.normal.z
 
-                texCoords[2*index + 0] = vertex.texCoord.u
-                texCoords[2*index + 1] = vertex.texCoord.v
+                texCoords[2*index + 0] = vertex.texCoord.x
+                texCoords[2*index + 1] = vertex.texCoord.y
 
                 drawOrder[index] = index
 
@@ -226,8 +218,8 @@ open class GameSurfaceView(context: Context, attr: AttributeSet) : GLSurfaceView
                 normals[3*index + 1] = vertex.normal.y
                 normals[3*index + 2] = vertex.normal.z
 
-                texCoords[2*index + 0] = vertex.texCoord.u
-                texCoords[2*index + 1] = vertex.texCoord.v
+                texCoords[2*index + 0] = vertex.texCoord.x
+                texCoords[2*index + 1] = vertex.texCoord.y
 
                 drawOrder[index] = index
 

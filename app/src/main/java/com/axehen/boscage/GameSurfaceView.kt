@@ -13,7 +13,7 @@ class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.
     init {
 
         renderer.lookAt = Vec3(0f, 0f, 0.5f)
-        renderer.eyePos = Vec3(0f, -4f, 7.5f)
+        renderer.lookFrom = Vec3(0f, -4f, 7f)    // Offset from lookAt from which to look
         renderer.zoom = 0.4f
 
         renderer.onDrawCallback =  {
@@ -38,12 +38,13 @@ class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.
             )
         )
 
+        val houseMeshList = parseOBJMTL( "models/house", 4f)
 
         renderer.addAll(
-            parseOBJMTL( "models/house", Vec3(-3f, 3f, 0f), Rotation(0f, 0f, 0f, 1f), 4f),
-            parseOBJMTL( "models/house", Vec3(3f, 3f, 0f), Rotation(-90f, 0f, 0f, 1f), 4f),
-            parseOBJMTL( "models/house", Vec3(3f, -3f, 0f), Rotation(180f, 0f, 0f, 1f), 4f),
-            parseOBJMTL( "models/house", Vec3(-3f, -3f, 0f), Rotation(90f, 0f, 0f, 1f), 4f),
+            CompoundMesh(Vec3(-3f, 3f, 0f), Rotation(0f, 0f, 0f, 1f), houseMeshList),
+            CompoundMesh(Vec3(3f, 3f, 0f), Rotation(-90f, 0f, 0f, 1f), houseMeshList),
+            CompoundMesh(Vec3(3f, -3f, 0f), Rotation(180f, 0f, 0f, 1f), houseMeshList),
+            CompoundMesh(Vec3(-3f, -3f, 0f), Rotation(90f, 0f, 0f, 1f), houseMeshList),
         )
 
         renderer.add(
@@ -196,32 +197,42 @@ class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.
         return true
     }
     // Touch responses
-    /**
-     * Renderer single finger move event response
-     * @param dx change in finger x coordinate divided by screen resolution
-     * @param dy change in finger y coordinate divided by screen resolution
-     */
-    private fun touchSwipe(dx: Float, dy: Float) {
-        with(renderer) {
-            eyePos.x = (eyePos.x - 2 * eyePos.z * zoom * dx)
-            eyePos.y = (eyePos.y + 2 * eyePos.z * zoom * dy)
-            lookAt.x = (lookAt.x - 2 * eyePos.z * zoom * dx)
-            lookAt.y = (lookAt.y + 2 * eyePos.z * zoom * dy)
-            updateView()
-        }
-    }
+//    /**
+//     * Renderer single finger move event response
+//     * @param dx change in finger x coordinate divided by screen resolution
+//     * @param dy change in finger y coordinate divided by screen resolution
+//     */
+//    private fun touchSwipe(dx: Float, dy: Float) {
+//        with(renderer) {
+//            eyePos.x = (eyePos.x - 2 * eyePos.z * zoom * dx)
+//            eyePos.y = (eyePos.y + 2 * eyePos.z * zoom * dy)
+//            lookAt.x = (lookAt.x - 2 * eyePos.z * zoom * dx)
+//            lookAt.y = (lookAt.y + 2 * eyePos.z * zoom * dy)
+//            updateView()
+//        }
+//    }
 
 
     private fun onDrawCallback() {
         val speed = 0.125f
         with(renderer) {
-            eyePos.x += speed * stickPos.x
-            eyePos.y -= speed * stickPos.y
+            val elevation = elevationAt(lookAt.x, lookAt.y)
+            //eyePos.x += speed * stickPos.x
+            //eyePos.y -= speed * stickPos.y
+
             lookAt.x += speed * stickPos.x
             lookAt.y -= speed * stickPos.y
+            lookAt.z = 0.5f + elevation
 
             updateView()
         }
+    }
+
+    /**
+     * Returns the maps elevation at a specific coordinate
+     */
+    private fun elevationAt(x: Float, y: Float): Float {
+        return (y-10f).coerceIn(0f, 1f)
     }
 
     /**
@@ -230,7 +241,7 @@ class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.
      */
     private fun touchPinch(dDist: Float) {
         with (renderer) {
-            eyePos.z = (eyePos.z - 7 * dDist).coerceIn(3f, 7.5f)
+            lookFrom.z = (lookFrom.z - 7 * dDist).coerceIn(3f, 7f)
             updateView()
             // zoom = (zoom - 0.0005f * dDist).coerceIn(0.1f, 1.0f)
         }

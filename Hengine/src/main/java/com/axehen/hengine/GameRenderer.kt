@@ -102,6 +102,7 @@ class GameRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
     /** Updates view matrix and camPos uniforms in shaders from applicable instance variables */
     fun updateView() {
+        val eyePos = lookFrom + lookAt
         // Calculate new viewMatrix
         Matrix.setLookAtM(viewMatrix, 0, eyePos.x, eyePos.y, eyePos.z, lookAt.x, lookAt.y, lookAt.z, 0f, 0f, 1f)
 
@@ -113,11 +114,11 @@ class GameRenderer(private val context: Context) : GLSurfaceView.Renderer {
     }
     private val viewMatrix = FloatArray(16)
     @Volatile   //TODO: Check if Volatile is necessary
-    var eyePos: Vec3 = Vec3(0f, 0f, 1f)
+    var lookFrom = Vec3(0f, 0f, 1f)
     @Volatile   //TODO: Check if Volatile is necessary
     var lookAt: Vec3 = Vec3(0f, 0f, 0f)
     private val camPosBuffer: FloatBuffer = FloatBuffer.allocate(3).also { buffer ->
-        buffer.put(floatArrayOf(eyePos.x, eyePos.y, eyePos.z))
+        buffer.put(floatArrayOf(lookFrom.x + lookAt.x, lookFrom.y + lookAt.y, lookFrom.z + lookAt.z))
         buffer.position(0)
     }
 
