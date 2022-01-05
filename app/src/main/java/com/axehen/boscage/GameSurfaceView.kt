@@ -11,13 +11,13 @@ import kotlin.math.sqrt
 
 class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.GameSurfaceView(context, attr) {
 
-    private val character: CompoundMesh
+    private val character = Character(Vec3(0f, 0f, 0f), Rotation(180f, 0f, 0f, 1f), parseOBJMTL( "models/character"))
 
     init {
 
         renderer.lookAt = Vec3(0f, 0f, 0.5f)
-        renderer.lookFrom = Vec3(0f, -4f, 7f)    // Offset from lookAt from which to look
-        renderer.zoom = 0.4f
+        renderer.lookFrom = Vec3(0f, -7f, 7f)    // Offset from lookAt from which to look
+        renderer.zoom = 0.2f
 
         renderer.onDrawCallback =  { onDrawCallback() }
 
@@ -38,6 +38,8 @@ class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.
             )
         )
 
+        renderer.add(character)
+
         val houseMeshList = parseOBJMTL( "models/house")
 
         renderer.addAll(
@@ -46,10 +48,6 @@ class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.
             CompoundMesh(Vec3(3f, -3f, 0f), Rotation(90f, 0f, 0f, 1f), houseMeshList),
             CompoundMesh(Vec3(-3f, -3f, 0f), Rotation(180f, 0f, 0f, 1f), houseMeshList),
         )
-
-
-        character = CompoundMesh(Vec3(0f, 0f, 0f), Rotation(180f, 0f, 0f, 1f), parseOBJMTL( "models/character"))
-        renderer.add(character)
 
         renderer.add(
             CompoundMesh(
@@ -167,6 +165,7 @@ class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.
             MotionEvent.ACTION_UP -> {
                 stickPos.x = 0f
                 stickPos.y = 0f
+                character.velocity = Vec3(0f, 0f, 0f)
                 renderMode = RENDERMODE_WHEN_DIRTY
             }
             MotionEvent.ACTION_MOVE -> {
@@ -181,8 +180,12 @@ class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.
 
                         val radius = 0.25f
                         stickPos.x += dx/(radius*height.toFloat())
-                        stickPos.y += dy/(radius*height.toFloat())
+                        stickPos.y -= dy/(radius*height.toFloat())
                         if (stickPos.length() > 1f) stickPos = stickPos.normalize()
+
+                        val speed = 0.125f
+                        character.rotation = Rotation(-90+atan2(stickPos.y, stickPos.x)*180f/PI.toFloat(), 0f, 0f, 1f)
+                        character.velocity = Vec3(speed * stickPos.x , speed * stickPos.y, 0f)
 
                         requestRender()
                     }
@@ -218,18 +221,16 @@ class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.
 
 
     private fun onDrawCallback() {
-        val speed = 0.125f
         with(renderer) {
-            val elevation = elevationAt(lookAt.x, lookAt.y)
             //eyePos.x += speed * stickPos.x
             //eyePos.y -= speed * stickPos.y
 
-            lookAt.x += speed * stickPos.x
-            lookAt.y -= speed * stickPos.y
-            lookAt.z = 0.5f + elevation
+            character.position += character.velocity
+            character.position.z = elevationAt(character.position.x, character.position.y)
 
-            character.position = Vec3(lookAt.x, lookAt.y, elevation)
-            character.rotation = Rotation(-90+atan2(-stickPos.y, stickPos.x)*180f/PI.toFloat(), 0f, 0f, 1f)
+            lookAt = character.position
+
+
 
             updateView()
         }
@@ -248,7 +249,7 @@ class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.
      */
     private fun touchPinch(dDist: Float) {
         with (renderer) {
-            lookFrom.z = (lookFrom.z - 7 * dDist).coerceIn(3f, 7f)
+            lookFrom.z = (lookFrom.z - 7 * dDist).coerceIn(3f, 14f)
             updateView()
             // zoom = (zoom - 0.0005f * dDist).coerceIn(0.1f, 1.0f)
         }
