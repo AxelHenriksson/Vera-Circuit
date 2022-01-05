@@ -11,7 +11,14 @@ import kotlin.math.sqrt
 
 class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.GameSurfaceView(context, attr) {
 
-    private val character = Character(Vec3(0f, 0f, 0f), Rotation(180f, 0f, 0f, 1f), parseOBJMTL( "models/character"))
+    private val character = Character(
+        position = Vec3(0f, 0f, 0f),
+        rotation = Rotation(180f, 0f, 0f, 1f),
+        radius =0.3f,
+        speed = 0.09f,
+        meshes = parseOBJMTL( "models/character"))
+
+    private val environment = Environment()
 
     init {
 
@@ -39,14 +46,17 @@ class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.
         )
 
         renderer.add(character)
+        renderer.add(environment)
 
         val houseMeshList = parseOBJMTL( "models/house")
 
-        renderer.addAll(
-            CompoundMesh(Vec3(-3f, 3f, 0f), Rotation(180f, 0f, 0f, 1f), houseMeshList),
-            CompoundMesh(Vec3(3f, 3f, 0f), Rotation(90f, 0f, 0f, 1f), houseMeshList),
-            CompoundMesh(Vec3(3f, -3f, 0f), Rotation(90f, 0f, 0f, 1f), houseMeshList),
-            CompoundMesh(Vec3(-3f, -3f, 0f), Rotation(180f, 0f, 0f, 1f), houseMeshList),
+        environment.objects.addAll(
+            arrayOf(
+            Environment.EnvironmentObject(Vec3(-3f, 3f, 0f),    Rotation(180f, 0f, 0f, 1f), houseMeshList, Environment.SquareCollidable(1f, 45f)),
+            Environment.EnvironmentObject(Vec3(3f, 3f, 0f),     Rotation(90f, 0f, 0f, 1f),  houseMeshList, Environment.SquareCollidable(1f, 45f)),
+            Environment.EnvironmentObject(Vec3(3f, -3f, 0f),    Rotation(90f, 0f, 0f, 1f),  houseMeshList, Environment.SquareCollidable(1f, 45f)),
+            Environment.EnvironmentObject(Vec3(-3f, -3f, 0f),   Rotation(180f, 0f, 0f, 1f), houseMeshList, Environment.SquareCollidable(1f, 45f)),
+            )
         )
 
         renderer.add(
@@ -132,17 +142,6 @@ class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.
             )
             )
         )
-
-
-        renderer.addAll(
-            Cube(
-                position = Vec3(0.5f, -2.5f, 0f),
-                rotation = Rotation(45f, 0f, 0f, 1f),
-                v1 = Vec3(-0.5f, -0.5f, 0f),
-                v2 = Vec3( 0.5f,  0.5f, 0.5f),
-                shader = earthShader
-            )
-        )
     }
 
 
@@ -183,9 +182,8 @@ class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.
                         stickPos.y -= dy/(radius*height.toFloat())
                         if (stickPos.length() > 1f) stickPos = stickPos.normalize()
 
-                        val speed = 0.125f
                         character.rotation = Rotation(-90+atan2(stickPos.y, stickPos.x)*180f/PI.toFloat(), 0f, 0f, 1f)
-                        character.velocity = Vec3(speed * stickPos.x , speed * stickPos.y, 0f)
+                        character.velocity = Vec3(character.speed * stickPos.x , character.speed * stickPos.y, 0f)
 
                         requestRender()
                     }
@@ -203,21 +201,6 @@ class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.
 
         return true
     }
-    // Touch responses
-//    /**
-//     * Renderer single finger move event response
-//     * @param dx change in finger x coordinate divided by screen resolution
-//     * @param dy change in finger y coordinate divided by screen resolution
-//     */
-//    private fun touchSwipe(dx: Float, dy: Float) {
-//        with(renderer) {
-//            eyePos.x = (eyePos.x - 2 * eyePos.z * zoom * dx)
-//            eyePos.y = (eyePos.y + 2 * eyePos.z * zoom * dy)
-//            lookAt.x = (lookAt.x - 2 * eyePos.z * zoom * dx)
-//            lookAt.y = (lookAt.y + 2 * eyePos.z * zoom * dy)
-//            updateView()
-//        }
-//    }
 
 
     private fun onDrawCallback() {
@@ -225,7 +208,15 @@ class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.
             //eyePos.x += speed * stickPos.x
             //eyePos.y -= speed * stickPos.y
 
-            character.position += character.velocity
+            var endVelocity = Vec2(character.velocity.x, character.velocity.y)
+
+            val collisionVectors = environment.getCollisionVectors(Vec2(character.position.x, character.position.y), character.radius)
+            if (collisionVectors.size > 0) {
+                for (collisionVector in collisionVectors)
+                    endVelocity = endVelocity.deflect(collisionVector)
+            }
+
+            character.position += Vec3(endVelocity, 0f)
             character.position.z = elevationAt(character.position.x, character.position.y)
 
             lookAt = character.position
