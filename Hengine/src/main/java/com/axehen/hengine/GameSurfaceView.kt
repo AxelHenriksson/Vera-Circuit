@@ -37,76 +37,82 @@ open class GameSurfaceView(context: Context, attr: AttributeSet) : GLSurfaceView
 
     class NotFoundException(msg: String) : Exception(msg)
 
-    fun parseOBJMTL(asset: String, scale: Float): List<Mesh> {
+    fun parseOBJMTL(asset: String): List<Mesh> {
         val objString = Utils.getStringFromAsset(context, "$asset.obj")
         val mtlString = Utils.getStringFromAsset(context, "$asset.mtl")
         Log.d(TAG, "parsing obj $asset: \n $objString \n\n and mtl: \n $mtlString \n\n")
 
-        val posList         = ArrayList<Vec3>()
-        val texCoordList    = ArrayList<Vec2>()
-        val normalList      = ArrayList<Vec3>()
-        val faceList        = ArrayList<Array<Vertex>>()
-        val meshList        = ArrayList<Mesh>()
-        var activeMaterial  = ""
+        // Split the obj file string into one string per object. Disregard the first element as that is above the first object declaration
+        val oStrings = objString.split("\\no [^\\s]+".toRegex()).let {
+            it.subList(1, it.size)
+        }
 
-        for(line in objString.lines()) {
+        val posList = ArrayList<Vec3>()
+        val texCoordList = ArrayList<Vec2>()
+        val normalList = ArrayList<Vec3>()
+        val faceList = ArrayList<Array<Vertex>>()
+        var activeMaterial = ""
+        val meshList = ArrayList<Mesh>()
 
-            line.split(" ").let { words ->
-                when (words[0]) {
-                    "v"  -> posList.add(
-                        Vec3(
-                            words[1].toFloat(),
-                            words[2].toFloat(),
-                            words[3].toFloat()
-                        )
-                    )
-                    "vt" -> texCoordList.add(
-                        Vec2(
-                            words[1].toFloat(),
-                            words[2].toFloat()
-                        )
-                    )
-                    "vn" -> normalList.add(
-                        Vec3(
-                            words[1].toFloat(),
-                            words[2].toFloat(),
-                            words[3].toFloat()
-                        )
-                    )
-                    "f"  -> {
-                        faceList.add(Array(/*words.size - 1*/ 3) {      // With size = 3 we only add triangles, leaving holes in the mesh if there are more than 3 vertices per face. Having size = words.size - 1, i.e. add all vertices of every face, means we get an error further down. As long as we triangulate the mesh before import we should not get holes in the mesh by using size 3.
-                            val indices = words[it+1].split("/")
-                            val texCoord = if (indices[1].isNotEmpty()) texCoordList[indices[1].toInt()-1] else Vec2(
-                                0f,
-                                0f
+        for(oString in oStrings) {
+            for (line in oString.lines()) {
+
+                line.split(" ").let { words ->
+                    when (words[0]) {
+                        "v" -> posList.add(
+                            Vec3(
+                                words[1].toFloat(),
+                                words[2].toFloat(),
+                                words[3].toFloat()
                             )
-                            Vertex(
-                                posList[indices[0].toInt() - 1] * scale,
-                                texCoord,
-                                normalList[indices[2].toInt() - 1]
+                        )
+                        "vt" -> texCoordList.add(
+                            Vec2(
+                                words[1].toFloat(),
+                                words[2].toFloat()
                             )
-                        })
-                    }
-                    "usemtl" -> {
-                        if (activeMaterial != "") {
-                            meshList.add(
-                                createMesh(
-                                    faceList,
-                                    getShaderFromMTL(mtlString, activeMaterial)
+                        )
+                        "vn" -> normalList.add(
+                            Vec3(
+                                words[1].toFloat(),
+                                words[2].toFloat(),
+                                words[3].toFloat()
+                            )
+                        )
+                        "f" -> {
+                            faceList.add(Array(/*words.size - 1*/ 3) {      // With size = 3 we only add triangles, leaving holes in the mesh if there are more than 3 vertices per face. Having size = words.size - 1, i.e. add all vertices of every face, means we get an error further down. As long as we triangulate the mesh before import we should not get holes in the mesh by using size 3.
+                                val indices = words[it + 1].split("/")
+                                val texCoord =
+                                    if (indices[1].isNotEmpty()) texCoordList[indices[1].toInt() - 1] else Vec2(
+                                        0f,
+                                        0f
+                                    )
+                                Vertex(
+                                    posList[indices[0].toInt() - 1],
+                                    texCoord,
+                                    normalList[indices[2].toInt() - 1]
                                 )
-                            )
-                            faceList.clear()
+                            })
                         }
-                        activeMaterial = words[1]
+                        "usemtl" -> {
+                            if (activeMaterial != "") {
+                                meshList.add(
+                                    createMesh(
+                                        faceList,
+                                        getShaderFromMTL(mtlString, activeMaterial)
+                                    )
+                                )
+                                faceList.clear()
+                            }
+                            activeMaterial = words[1]
+                        }
+                        else -> {}
                     }
-                    else -> {}
                 }
             }
+            meshList.add(createMesh(faceList, getShaderFromMTL(mtlString, activeMaterial)))
         }
-        meshList.add(createMesh(faceList, getShaderFromMTL(mtlString, activeMaterial)))
-
         return meshList
-
         // Log.d(TAG, "${objString.lines().size} lines parsed in OBJ file, ${posList.size} positions added, ${texCoordList.size} texCoords added, ${normalList.size} normals added, ${faceList.size} faces added")
     }
 

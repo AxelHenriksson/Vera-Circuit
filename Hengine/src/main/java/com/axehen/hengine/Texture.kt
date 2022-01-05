@@ -10,11 +10,11 @@ import java.nio.IntBuffer
 
 
 class Texture(bitmap: Bitmap, val uniform: String) {
-    val buffer      =  getBitmapBuffer(bitmap)
+    private val buffer      =  getBitmapBuffer(bitmap)
 
-    val format      = GL_RGBA
-    val width       = bitmap.width
-    val height      = bitmap.height
+    private val format      = GL_RGBA
+    private val width       = bitmap.width
+    private val height      = bitmap.height
 
     var id: Int = -1
 

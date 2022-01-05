@@ -12,12 +12,12 @@ import java.nio.IntBuffer
  * @param uniform The shader uniform to which hte cubemap is mapped
  */
 class Cubemap(bitmaps: Array<Bitmap>, val uniform: String) {
-    val buffers: Array<ByteBuffer> = Array(6) { getBitmapBuffer(bitmaps[it]) }
+    private val buffers: Array<ByteBuffer> = Array(6) { getBitmapBuffer(bitmaps[it]) }
 
     var id      = -1
-    val format  = GL_RGBA
-    val width   = bitmaps[0].width
-    val height  = bitmaps[0].height
+    private val format  = GL_RGBA
+    private val width   = bitmaps[0].width
+    private val height  = bitmaps[0].height
 
     init {
         // Validate the provided bitmap set

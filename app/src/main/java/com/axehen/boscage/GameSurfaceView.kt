@@ -2,13 +2,16 @@ package com.axehen.boscage
 
 import android.content.Context
 import android.util.AttributeSet
-import android.util.Log
 import android.view.MotionEvent
 import com.axehen.hengine.*
+import kotlin.math.PI
+import kotlin.math.atan2
 import kotlin.math.pow
 import kotlin.math.sqrt
 
 class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.GameSurfaceView(context, attr) {
+
+    private val character: CompoundMesh
 
     init {
 
@@ -16,10 +19,7 @@ class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.
         renderer.lookFrom = Vec3(0f, -4f, 7f)    // Offset from lookAt from which to look
         renderer.zoom = 0.4f
 
-        renderer.onDrawCallback =  {
-            Log.d(TAG, "onDrawCallBack called")
-            onDrawCallback()
-        }
+        renderer.onDrawCallback =  { onDrawCallback() }
 
         val grassShader = Shader(
             renderer = renderer,
@@ -38,14 +38,18 @@ class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.
             )
         )
 
-        val houseMeshList = parseOBJMTL( "models/house", 4f)
+        val houseMeshList = parseOBJMTL( "models/house")
 
         renderer.addAll(
-            CompoundMesh(Vec3(-3f, 3f, 0f), Rotation(0f, 0f, 0f, 1f), houseMeshList),
-            CompoundMesh(Vec3(3f, 3f, 0f), Rotation(-90f, 0f, 0f, 1f), houseMeshList),
-            CompoundMesh(Vec3(3f, -3f, 0f), Rotation(180f, 0f, 0f, 1f), houseMeshList),
-            CompoundMesh(Vec3(-3f, -3f, 0f), Rotation(90f, 0f, 0f, 1f), houseMeshList),
+            CompoundMesh(Vec3(-3f, 3f, 0f), Rotation(180f, 0f, 0f, 1f), houseMeshList),
+            CompoundMesh(Vec3(3f, 3f, 0f), Rotation(90f, 0f, 0f, 1f), houseMeshList),
+            CompoundMesh(Vec3(3f, -3f, 0f), Rotation(90f, 0f, 0f, 1f), houseMeshList),
+            CompoundMesh(Vec3(-3f, -3f, 0f), Rotation(180f, 0f, 0f, 1f), houseMeshList),
         )
+
+
+        character = CompoundMesh(Vec3(0f, 0f, 0f), Rotation(180f, 0f, 0f, 1f), parseOBJMTL( "models/character"))
+        renderer.add(character)
 
         renderer.add(
             CompoundMesh(
@@ -223,6 +227,9 @@ class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.
             lookAt.x += speed * stickPos.x
             lookAt.y -= speed * stickPos.y
             lookAt.z = 0.5f + elevation
+
+            character.position = Vec3(lookAt.x, lookAt.y, elevation)
+            character.rotation = Rotation(-90+atan2(-stickPos.y, stickPos.x)*180f/PI.toFloat(), 0f, 0f, 1f)
 
             updateView()
         }
