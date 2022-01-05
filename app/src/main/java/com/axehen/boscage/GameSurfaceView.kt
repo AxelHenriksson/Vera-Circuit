@@ -2,6 +2,7 @@ package com.axehen.boscage
 
 import android.content.Context
 import android.util.AttributeSet
+import android.util.Log
 import android.view.MotionEvent
 import com.axehen.hengine.*
 import kotlin.math.pow
@@ -14,6 +15,11 @@ class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.
         renderer.lookAt = Vec3(0f, 0f, 0.5f)
         renderer.eyePos = Vec3(0f, -4f, 7.5f)
         renderer.zoom = 0.4f
+
+        renderer.onDrawCallback =  {
+            Log.d(TAG, "onDrawCallBack called")
+            onDrawCallback()
+        }
 
         val grassShader = Shader(
             renderer = renderer,
@@ -141,6 +147,8 @@ class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.
     private var previousY: Float = 0f
     private var prevDist: Float = 0f
 
+    private var stickPos: Vec2 = Vec2(0f, 0f)
+
     override fun onTouchEvent(event: MotionEvent): Boolean {
         val x = event.x
         val y = event.y
@@ -148,6 +156,14 @@ class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.
 
         //Log.d("GameSurfaceView",event.toString())
         when(event.action) {
+            MotionEvent.ACTION_DOWN -> {
+                renderMode = RENDERMODE_CONTINUOUSLY
+            }
+            MotionEvent.ACTION_UP -> {
+                stickPos.x = 0f
+                stickPos.y = 0f
+                renderMode = RENDERMODE_WHEN_DIRTY
+            }
             MotionEvent.ACTION_MOVE -> {
 
                 val dx: Float = x - previousX
@@ -156,7 +172,13 @@ class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.
 
                 when (event.pointerCount) {
                     1 -> {
-                        touchSwipe(dx / height.toFloat(), dy / height.toFloat())
+                        //touchSwipe(dx / height.toFloat(), dy / height.toFloat())
+
+                        val radius = 0.25f
+                        stickPos.x += dx/(radius*height.toFloat())
+                        stickPos.y += dy/(radius*height.toFloat())
+                        if (stickPos.length() > 1f) stickPos = stickPos.normalize()
+
                         requestRender()
                     }
                     2 -> {
@@ -189,16 +211,33 @@ class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.
         }
     }
 
+
+    private fun onDrawCallback() {
+        val speed = 0.125f
+        with(renderer) {
+            eyePos.x += speed * stickPos.x
+            eyePos.y -= speed * stickPos.y
+            lookAt.x += speed * stickPos.x
+            lookAt.y -= speed * stickPos.y
+
+            updateView()
+        }
+    }
+
     /**
      * Renderer two finger pinch event response
      * @param dDist change in finger distance divided by screen resolution
      */
     private fun touchPinch(dDist: Float) {
         with (renderer) {
-            eyePos.z = (eyePos.z - 7 * dDist).coerceIn(3f, 6f)
+            eyePos.z = (eyePos.z - 7 * dDist).coerceIn(3f, 7.5f)
             updateView()
             // zoom = (zoom - 0.0005f * dDist).coerceIn(0.1f, 1.0f)
         }
+    }
+
+    companion object {
+        private const val TAG = "boscage.GameSurfaceView.kt"
     }
 
 }

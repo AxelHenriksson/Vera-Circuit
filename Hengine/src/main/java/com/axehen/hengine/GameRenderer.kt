@@ -21,6 +21,8 @@ import kotlin.collections.HashMap
 
 class GameRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
+    var onDrawCallback: (() -> Unit)? = null
+
     /** Adds a drawable into the renderer's pipeline **/
     fun add(drawable: Drawable) { newDrawables.add(drawable) }
     fun addAll(vararg drawables: Drawable) { newDrawables.addAll(drawables) }
@@ -163,6 +165,7 @@ class GameRenderer(private val context: Context) : GLSurfaceView.Renderer {
             glUniformMatrix4fv(glGetUniformLocation(id, "mView"), 1, false, viewMatrix, 0)
         }
 
+        onDrawCallback?.invoke()
 
         drawables.forEach {it.draw()}
     }

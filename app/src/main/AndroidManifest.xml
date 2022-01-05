@@ -17,7 +17,7 @@
             android:exported="true"
             android:label="Boscage"
             android:theme="@style/Theme.Boscage.Fullscreen"
-            android:screenOrientation="landscape">
+            android:screenOrientation="sensorLandscape">
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
