@@ -25,16 +25,16 @@ class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.
             renderer = renderer,
             shaderAsset = "shaders/textured",
             textures = arrayOf(
-                Texture(renderer, "textures/grass.png", "tex0"),
-                Texture(renderer, "textures/earth.png", "tex_ao")
+                Texture(getBitmap("textures/grass.png"), "tex0"),
+                Texture(getBitmap("textures/earth.png"), "tex_ao")
             )
         )
         val earthShader = Shader(
             renderer = renderer,
             shaderAsset = "shaders/textured",
             textures = arrayOf(
-                Texture(renderer, "textures/earth.png", "tex0"),
-                Texture(renderer, "textures/earth.png", "tex_ao")
+                Texture(getBitmap("textures/earth.png"), "tex0"),
+                Texture(getBitmap("textures/earth.png"), "tex_ao")
             )
         )
 

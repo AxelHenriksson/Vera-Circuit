@@ -35,47 +35,6 @@ class GameRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
     // Singleton rendering object functions
     /**
-     * Keeps track of loaded bitmaps, returns the existing bitmap if the asset has been loaded, loads it if not
-     * @param assetName Bitmap asset file name
-     * @return The decoded Bitmap object
-     */
-    fun getBitmap(assetName: String): Bitmap {
-        return if (bitmaps.containsKey(assetName) && bitmaps[assetName] != null)
-            bitmaps[assetName]!!
-        else {
-            val opts = BitmapFactory.Options()
-            opts.inScaled = false
-            opts.inPreferredColorSpace = ColorSpace.get(ColorSpace.Named.SRGB)
-            BitmapFactory.decodeStream(context.assets.open(assetName) /*, opts*/ ).flip(1f, -1f).also {
-
-                bitmaps[assetName] = it
-                Log.d(TAG, "bitmap got with colorSpace: ${it.colorSpace}, width: ${it.width}, height: ${it.height}, allocationByteCount: ${it.allocationByteCount}, byteCount: ${it.byteCount}, turned into ByteBuffer")
-            }
-        }
-    }
-    private val bitmaps: HashMap<String, Bitmap> = HashMap()
-
-    private fun Bitmap.flip(x: Float, y: Float): Bitmap {
-        val matrix = android.graphics.Matrix()
-        matrix.preScale(x, y)
-        return Bitmap.createBitmap(this, 0, 0, width, height, matrix, true)
-    }
-
-    /**
-     * Returns a bytebuffer of a specified bitmap, either newly loaded or fetched from old
-     * @param assetName Bitmap asset file name
-     * @return The decoded bitmap in a ByteBuffer
-     */
-    fun getBitmapBuffer(assetName: String): ByteBuffer {
-        return with (getBitmap(assetName)) {
-            ByteBuffer.allocateDirect(this.allocationByteCount).also {
-                this.copyPixelsToBuffer(it)
-                it.position(0)
-            }
-        }
-    }
-
-    /**
      * Loads a Shader object into GLES memory and returns its ID
      */
     fun loadShader(shader: Shader): Int {

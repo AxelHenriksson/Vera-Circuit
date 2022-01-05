@@ -2,25 +2,26 @@ package com.axehen.hengine
 
 import android.graphics.Bitmap
 import android.opengl.GLES31.*
+import com.axehen.hengine.Texture.Companion.getBitmapBuffer
 import java.lang.IllegalArgumentException
 import java.nio.ByteBuffer
 import java.nio.IntBuffer
 
 /**
- * @param renderer The game renderer in which the cubemap is used
- * @param faceResources Array of 6 face resource IDs in the order: posX, negX, posY, negY, posZ, negZ
+ * @param bitmaps An array of 6 face bitmaps
  * @param uniform The shader uniform to which hte cubemap is mapped
  */
-data class Cubemap(val renderer: GameRenderer, val faceAssets: Array<String>, val uniform: String) {
-    val bitmaps: Array<Bitmap> = Array(6) { renderer.getBitmap(faceAssets[it]) }
-    val buffers: Array<ByteBuffer> = Array(6) { renderer.getBitmapBuffer(faceAssets[it]) }
+class Cubemap(bitmaps: Array<Bitmap>, val uniform: String) {
+    val buffers: Array<ByteBuffer> = Array(6) { getBitmapBuffer(bitmaps[it]) }
 
-    var id: Int = -1
-    val format: Int = GL_RGBA
-    val width by lazy { bitmaps[0].width }
-    val height by lazy { bitmaps[0].height }
+    var id      = -1
+    val format  = GL_RGBA
+    val width   = bitmaps[0].width
+    val height  = bitmaps[0].height
 
     init {
+        // Validate the provided bitmap set
+        if (bitmaps.size != 6) throw IllegalArgumentException("6 bitmaps are required when initializing a Cubemap, however ${bitmaps.size} were provided")
         if(bitmaps[0].height != bitmaps[0].width)  throw IllegalArgumentException("Cubemap bitmaps are not square")
         for(i in 0 until bitmaps.size-1) {
             val bmp1 = bitmaps[i]
@@ -45,7 +46,7 @@ data class Cubemap(val renderer: GameRenderer, val faceAssets: Array<String>, va
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE)
 
-        for(i in faceAssets.indices) {
+        for(i in buffers.indices) {
 
             glTexImage2D(
                 GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,

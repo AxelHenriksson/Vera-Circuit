@@ -1,6 +1,7 @@
 package com.axehen.hengine
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.Color
 import android.util.TypedValue
 import java.io.*
@@ -9,7 +10,9 @@ import java.lang.StringBuilder
 
 
 
-class Utils { companion object {
+class Utils {
+
+    companion object {
         private const val TAG = "Utils.kt"
 
         fun getThemeColor(context: Context, resId: Int): Color {

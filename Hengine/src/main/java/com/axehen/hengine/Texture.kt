@@ -1,19 +1,20 @@
 package com.axehen.hengine
 
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.ColorSpace
 import android.opengl.GLES31.*
-import com.axehen.hengine.GameRenderer
+import android.util.Log
 import java.nio.ByteBuffer
 import java.nio.IntBuffer
 
 
-data class Texture(val renderer: GameRenderer, val assetName: String, val uniform: String) {
-    val bitmap: Bitmap by lazy { renderer.getBitmap(assetName) }
-    val buffer: ByteBuffer by lazy { renderer.getBitmapBuffer(assetName) }
+class Texture(bitmap: Bitmap, val uniform: String) {
+    val buffer      =  getBitmapBuffer(bitmap)
 
-    val format: Int = GL_RGBA
-    val width by lazy { bitmap.width }
-    val height by lazy { bitmap.height }
+    val format      = GL_RGBA
+    val width       = bitmap.width
+    val height      = bitmap.height
 
     var id: Int = -1
 
@@ -24,7 +25,7 @@ data class Texture(val renderer: GameRenderer, val assetName: String, val unifor
      **/
     fun load(slot: Int) {
 
-        //Generate texture IDs
+        //Generate texture ID
         with(IntBuffer.allocate(1)) {
             glGenTextures(1, this)
             id = this[0]
@@ -61,5 +62,16 @@ data class Texture(val renderer: GameRenderer, val assetName: String, val unifor
         )
 
         glGenerateMipmap(GL_TEXTURE_2D)
+    }
+
+    companion object {
+        fun getBitmapBuffer(bitmap: Bitmap): ByteBuffer {
+            return with(bitmap) {
+                ByteBuffer.allocateDirect(this.allocationByteCount).also {
+                    this.copyPixelsToBuffer(it)
+                    it.position(0)
+                }
+            }
+        }
     }
 }

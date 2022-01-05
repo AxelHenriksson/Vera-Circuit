@@ -1,6 +1,8 @@
 package com.axehen.hengine
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.opengl.GLES31.*
 import android.opengl.GLSurfaceView
 import android.util.AttributeSet
@@ -128,7 +130,9 @@ open class GameSurfaceView(context: Context, attr: AttributeSet) : GLSurfaceView
         if (mapKd == "") throw NotFoundException("Either the material $activeMaterial or the texture map_Kd was not found in mtl file")
 
         return Shader(renderer,"shaders/mtl", arrayOf(
-            Texture(renderer,mapKd, "texKd")
+            Texture(
+                bitmap = getBitmap(mapKd),
+                uniform = "texKd")
         ))
     }
 
@@ -234,6 +238,19 @@ open class GameSurfaceView(context: Context, attr: AttributeSet) : GLSurfaceView
             drawOrder = drawOrder,
             shader = shader
         )
+    }
+
+
+    fun getBitmap(asset: String): Bitmap {
+            //val opts = BitmapFactory.Options()
+            //opts.inScaled = false
+            //opts.inPreferredColorSpace = ColorSpace.get(ColorSpace.Named.SRGB)
+            return BitmapFactory.decodeStream(context.assets.open(asset) ).flip(1f, -1f).also {
+                Log.d(TAG, "bitmap got with colorSpace: ${it.colorSpace}, width: ${it.width}, height: ${it.height}, allocationByteCount: ${it.allocationByteCount}, byteCount: ${it.byteCount}")
+            }
+    }
+    private fun Bitmap.flip(x: Float, y: Float): Bitmap {
+        return Bitmap.createBitmap(this, 0, 0, width, height, android.graphics.Matrix().also { it.preScale(x, y) }, true)
     }
 
     companion object {
