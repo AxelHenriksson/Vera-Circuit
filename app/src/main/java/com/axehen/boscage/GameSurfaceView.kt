@@ -19,6 +19,9 @@ class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.
         meshes = parseOBJMTL( "models/character"))
 
     private val environment = Environment()
+    private val userInterface = UserInterface(
+        screenDimensions = Vec2(resources.displayMetrics.widthPixels.toFloat()/resources.displayMetrics.xdpi, resources.displayMetrics.heightPixels.toFloat()/resources.displayMetrics.ydpi)
+    )
 
     init {
 
@@ -45,50 +48,36 @@ class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.
             )
         )
 
-        renderer.add(character)
-        renderer.add(environment)
-
-        val houseMeshList = parseOBJMTL( "models/house")
-
-        environment.objects.addAll(
-            arrayOf(
-            Environment.EnvironmentObject(Vec3(-3f, 3f, 0f),    Rotation(180f, 0f, 0f, 1f), houseMeshList, Environment.SquareCollidable(1f, 45f)),
-            Environment.EnvironmentObject(Vec3(3f, 3f, 0f),     Rotation(90f, 0f, 0f, 1f),  houseMeshList, Environment.SquareCollidable(1f, 45f)),
-            Environment.EnvironmentObject(Vec3(3f, -3f, 0f),    Rotation(90f, 0f, 0f, 1f),  houseMeshList, Environment.SquareCollidable(1f, 45f)),
-            Environment.EnvironmentObject(Vec3(-3f, -3f, 0f),   Rotation(180f, 0f, 0f, 1f), houseMeshList, Environment.SquareCollidable(1f, 45f)),
-            )
-        )
-
-        renderer.add(
+        environment.groundMesh =
             CompoundMesh(
                 position = Vec3(0f, 0f, 0f),
                 rotation = Rotation(0f, 0f, 0f, 1f),
                 arrayListOf(
                     Mesh(
-                    vertexCoords = floatArrayOf(
-                        -50f, -50f, 0f,
-                         50f, -50f, 0f,
-                         50f,   10f, 0f,
-                        -50f,   10f, 0f
+                        vertexCoords = floatArrayOf(
+                            -50f, -50f, 0f,
+                            50f, -50f, 0f,
+                            50f,   10f, 0f,
+                            -50f,   10f, 0f
+                        ),
+                        normals = floatArrayOf(
+                            0f, 0f, 1f,
+                            0f, 0f, 1f,
+                            0f, 0f, 1f,
+                            0f, 0f, 1f,
+                        ),
+                        texCoords = floatArrayOf(
+                            -50f, -50f,
+                            50f, -50f,
+                            50f,   10f,
+                            -50f,   10f,
+                        ),
+                        drawOrder = intArrayOf(
+                            0, 1, 2,
+                            0, 2, 3
+                        ),
+                        shader = grassShader
                     ),
-                    normals = floatArrayOf(
-                        0f, 0f, 1f,
-                        0f, 0f, 1f,
-                        0f, 0f, 1f,
-                        0f, 0f, 1f,
-                    ),
-                    texCoords = floatArrayOf(
-                        -50f, -50f,
-                         50f, -50f,
-                         50f,   10f,
-                        -50f,   10f,
-                    ),
-                    drawOrder = intArrayOf(
-                        0, 1, 2,
-                        0, 2, 3
-                    ),
-                    shader = grassShader
-                ),
                     Mesh(
                         vertexCoords = floatArrayOf(
                             -50f, 10f, 0f,
@@ -139,9 +128,39 @@ class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.
                         ),
                         shader = grassShader
                     )
+                )
             )
+
+        val houseMeshList = parseOBJMTL( "models/house")
+        environment.objects.addAll(
+            arrayOf(
+                Environment.EnvironmentObject(Vec3(-3f, 3f, 0f),    Rotation(180f, 0f, 0f, 1f), houseMeshList, Environment.SquareCollidable(1f, 45f)),
+                Environment.EnvironmentObject(Vec3(3f, 3f, 0f),     Rotation(90f, 0f, 0f, 1f),  houseMeshList, Environment.SquareCollidable(1f, 45f)),
+                Environment.EnvironmentObject(Vec3(3f, -3f, 0f),    Rotation(90f, 0f, 0f, 1f),  houseMeshList, Environment.SquareCollidable(1f, 45f)),
+                Environment.EnvironmentObject(Vec3(-3f, -3f, 0f),   Rotation(180f, 0f, 0f, 1f), houseMeshList, Environment.SquareCollidable(1f, 45f)),
             )
         )
+
+        val aButtonShader = Shader(renderer, "shaders/ui", arrayOf(Texture(getBitmap("textures/ButtonIcon-GCN-A.png"), "tex0")))
+        val bButtonShader = Shader(renderer, "shaders/ui", arrayOf(Texture(getBitmap("textures/ButtonIcon-GCN-B.png"), "tex0")))
+        userInterface.elements.add(UIRectangle(
+            dimensions = Vec2(2f/2.54f, 2f/2.54f),
+            margins = Vec2(1f/2.54f, 1.5f/2.54f),
+            anchor = UIRectangle.Companion.UIAnchor.BOTTOM_RIGHT,
+            shader = aButtonShader))
+        userInterface.elements.add(UIRectangle(
+            dimensions = Vec2(2f/2.54f, 2f/2.54f),
+            margins = Vec2(2f/2.54f, 0.5f/2.54f),
+            anchor = UIRectangle.Companion.UIAnchor.BOTTOM_RIGHT,
+            shader = bButtonShader))
+
+        renderer.add(character)
+        renderer.add(environment)
+        renderer.userInterface = userInterface
+
+
+
+
     }
 
 

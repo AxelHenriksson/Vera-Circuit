@@ -1,5 +1,5 @@
 #version 310 es
-// mtl.vert
+// textured.vert
 
 uniform mat4 mModel;
 uniform mat4 mView;

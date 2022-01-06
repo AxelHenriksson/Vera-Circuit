@@ -1,5 +1,5 @@
 #version 310 es
-// mirrored_vert.glsl
+// mirrored.vert
 
 uniform mat4 mModel;
 uniform mat4 mView;

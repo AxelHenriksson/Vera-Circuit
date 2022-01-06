@@ -1,5 +1,5 @@
 #version 310 es
-// mtl.frag
+// textured.frag
 
 precision mediump float;
 

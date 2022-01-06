@@ -1,5 +1,5 @@
 #version 310 es
-// mirrored_frag.glsl
+// mirrored.frag
 
 precision mediump float;
 

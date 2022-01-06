@@ -26,12 +26,15 @@ class GameRenderer(private val context: Context) : GLSurfaceView.Renderer {
     /** Adds a drawable into the renderer's pipeline **/
     fun add(drawable: Drawable) { newDrawables.add(drawable) }
     fun addAll(vararg drawables: Drawable) { newDrawables.addAll(drawables) }
+    fun remove(drawable: Drawable) { drawables.remove(drawable) }   // We should probably do something before we remove it so as not to leak memory
 
 
     // List of new drawables not yet added into the rendering pipeline
     private val newDrawables: ArrayList<Drawable> = ArrayList()
     // List of drawables in the rendering pipeline
     private val drawables: ArrayList<Drawable> = ArrayList()
+
+    var userInterface: UserInterface? = null
 
     // Singleton rendering object functions
     /**
@@ -103,6 +106,8 @@ class GameRenderer(private val context: Context) : GLSurfaceView.Renderer {
         glDepthFunc(GL_LEQUAL)
         glDepthMask( true )
 
+        userInterface?.load()
+
         //drawables.forEach { it.load() }  There are no longer any drawables in 'drawables' on surface creation, only in 'newMeshes'
     }
 
@@ -128,11 +133,21 @@ class GameRenderer(private val context: Context) : GLSurfaceView.Renderer {
         onDrawCallback?.invoke()
 
         drawables.forEach {it.draw()}
+
+        userInterface?.let {
+            glEnable(GL_BLEND)
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+            it.draw()
+            glDisable(GL_BLEND)
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        }
     }
 
 
     override fun onSurfaceChanged(unused: GL10, width: Int, height: Int) {
         glViewport(0, 0, width, height)
+
+        userInterface?.screenDimensions = Vec2(width/context.resources.displayMetrics.xdpi, height/context.resources.displayMetrics.ydpi)
 
         updateProjectionMatrix(width, height)
     }
