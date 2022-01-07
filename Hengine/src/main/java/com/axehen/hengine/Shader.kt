@@ -27,7 +27,7 @@ class Shader(private val renderer: GameRenderer, val shaderAsset: String, val cu
 
                 glUseProgram(id)
 
-                glUniform1i(textureUniformLocation, 0)
+                glUniform1i(textureUniformLocation, i)
             }
         }
 

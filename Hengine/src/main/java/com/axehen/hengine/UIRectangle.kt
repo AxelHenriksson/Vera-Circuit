@@ -2,6 +2,8 @@ package com.axehen.hengine
 
 import android.opengl.GLES31
 import android.opengl.Matrix
+import android.util.Log
+import android.view.MotionEvent
 import java.lang.IllegalArgumentException
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -13,7 +15,59 @@ import java.nio.IntBuffer
  * @param margins       The UIRectangle x/y margins in inches
  * @param anchor        The UIRectangles anchor (TOP_LEFT, TOP_RIGHT, BOTTOM_LEFT, BOTTOM_RIGHT)
  */
-class UIRectangle(var dimensions: Vec2, var margins: Vec2, var anchor: UIAnchor, private val shader: Shader) {
+open class UIRectangle(var dimensions: Vec2, var margins: Vec2, var anchor: UIAnchor, protected val shader: Shader) {
+    interface UICollidable {
+        fun isWithin(buttonOrigin: Vec2, touchPos: Vec2): Boolean
+    }
+    class CircleUICollidable(private val radius: Float): UICollidable {
+        override fun isWithin(buttonOrigin: Vec2, touchPos: Vec2): Boolean = (buttonOrigin - touchPos).length() <= radius
+    }
+    class UIButton(dimensions: Vec2, margins: Vec2, anchor: UIAnchor, shader: Shader, val collidable: UICollidable, val action: (pressed: Int) -> Unit): UIRectangle(dimensions, margins, anchor, shader) {
+        var isPressed = false
+
+        /**
+         * @param x X touch coordinate in inches
+         * @param y Y touch coordinate in inches
+         * @return true if the touch was on the element, false otherwise
+         */
+        fun touch(touchPos: Vec2, screenDimensions: Vec2, event: MotionEvent): Boolean {
+            Log.d("UIButton", "button.touch() called")
+            return if(collidable.isWithin(getOrigin(screenDimensions), touchPos)) {
+                when(event.action) {
+                    MotionEvent.ACTION_UP -> {
+                        Log.d(TAG, "isPressed set to false")
+                        isPressed = false
+                    }
+                    MotionEvent.ACTION_DOWN -> {
+
+                        Log.d(TAG, "isPressed set to true")
+                        isPressed = true
+                    }
+                }
+                action.invoke(event.action)
+                true
+            } else
+                false
+        }
+
+        override fun draw(screenDimensions: Vec2) {
+            GLES31.glUseProgram(shader.id)
+            GLES31.glUniform1i(GLES31.glGetUniformLocation(shader.id, "isPressed"), if(isPressed) 1 else 0)
+            super.draw(screenDimensions)
+        }
+    }
+
+    /**
+     * @return the UIRectangles origin in inches
+     */
+    protected fun getOrigin(screenDimensions: Vec2): Vec2 {
+        return when (anchor) {
+            UIAnchor.TOP_LEFT       -> Vec2(                     margins.x+dimensions.x/2,  screenDimensions.y - margins.y - dimensions.y/2)
+            UIAnchor.TOP_RIGHT      -> Vec2(screenDimensions.x - margins.x-dimensions.x/2,  screenDimensions.y - margins.y - dimensions.y/2)
+            UIAnchor.BOTTOM_LEFT    -> Vec2(                     margins.x+dimensions.x/2,                       margins.y + dimensions.y/2)
+            UIAnchor.BOTTOM_RIGHT   -> Vec2(screenDimensions.x - margins.x-dimensions.x/2,                       margins.y + dimensions.y/2)
+        }
+    }
 
     // Create a basic plane spanning the screen that is later translated and scaled in the shader
     private val vertexCoords = floatArrayOf(
@@ -68,7 +122,7 @@ class UIRectangle(var dimensions: Vec2, var margins: Vec2, var anchor: UIAnchor,
     /**
      * @param screenDimensions The screen dimensions in inches
      */
-    fun draw(screenDimensions: Vec2) {
+    open fun draw(screenDimensions: Vec2) {
         shader.bindTextures()
 
         // get handle to vertex shader's vPosition member. positionHandle is later used to disable its attribute array
@@ -87,11 +141,13 @@ class UIRectangle(var dimensions: Vec2, var margins: Vec2, var anchor: UIAnchor,
         // Create a matrix to scale and move UIRectangle
         FloatArray(16).let { matrix ->
             Matrix.setIdentityM(matrix, 0)
+            val xOffset = 2*(margins.x+dimensions.x/2)/screenDimensions.x
+            val yOffset = 2*(margins.y+dimensions.y/2)/screenDimensions.y
             when (anchor) {
-                UIAnchor.TOP_LEFT       -> Matrix.translateM(matrix, 0, -1f + 2*( margins.x+dimensions.x/2)/screenDimensions.x,  1f - 2*(margins.y+dimensions.y/2)/screenDimensions.y, 0f)
-                UIAnchor.TOP_RIGHT      -> Matrix.translateM(matrix, 0,  1f + 2*(-margins.x-dimensions.x/2)/screenDimensions.x,  1f - 2*(margins.y+dimensions.y/2)/screenDimensions.y, 0f)
-                UIAnchor.BOTTOM_LEFT    -> Matrix.translateM(matrix, 0, -1f + 2*( margins.x+dimensions.x/2)/screenDimensions.x, -1f + 2*(margins.y+dimensions.y/2)/screenDimensions.y, 0f)
-                UIAnchor.BOTTOM_RIGHT   -> Matrix.translateM(matrix, 0,  1f + 2*(-margins.x-dimensions.x/2)/screenDimensions.x, -1f + 2*(margins.y+dimensions.y/2)/screenDimensions.y, 0f)
+                UIAnchor.TOP_LEFT       -> Matrix.translateM(matrix, 0, -1f + xOffset,  1f - yOffset, 0f)
+                UIAnchor.TOP_RIGHT      -> Matrix.translateM(matrix, 0,  1f - xOffset,  1f - yOffset, 0f)
+                UIAnchor.BOTTOM_LEFT    -> Matrix.translateM(matrix, 0, -1f + xOffset, -1f + yOffset, 0f)
+                UIAnchor.BOTTOM_RIGHT   -> Matrix.translateM(matrix, 0,  1f - xOffset, -1f + yOffset, 0f)
             }
             Matrix.scaleM(matrix, 0, dimensions.x/screenDimensions.x, dimensions.y/screenDimensions.y, 0f)
             GLES31.glUniformMatrix4fv(
@@ -102,7 +158,6 @@ class UIRectangle(var dimensions: Vec2, var margins: Vec2, var anchor: UIAnchor,
                 0
             )
         }
-
 
         // Draw the triangle
         GLES31.glDrawElements(

@@ -26,8 +26,8 @@ class GameRenderer(private val context: Context) : GLSurfaceView.Renderer {
     /** Adds a drawable into the renderer's pipeline **/
     fun add(drawable: Drawable) { newDrawables.add(drawable) }
     fun addAll(vararg drawables: Drawable) { newDrawables.addAll(drawables) }
-    fun remove(drawable: Drawable) { drawables.remove(drawable) }   // We should probably do something before we remove it so as not to leak memory
-
+    fun remove(drawable: Drawable) { toRemove.add(drawable) }   // We should probably do something before we remove it so as not to leak memory
+    val toRemove = HashSet<Drawable>()
 
     // List of new drawables not yet added into the rendering pipeline
     private val newDrawables: ArrayList<Drawable> = ArrayList()
@@ -90,7 +90,7 @@ class GameRenderer(private val context: Context) : GLSurfaceView.Renderer {
         // Matrix.orthoM(projectionMatrix, 0, -ratio, ratio, -1f, 1f, 0.1f, 10f) // Orthographic projection matrix
     }
     private val projectionMatrix = FloatArray(16)
-    @Volatile
+    //@Volatile
     var zoom: Float = 1.0f
 
 
@@ -117,6 +117,8 @@ class GameRenderer(private val context: Context) : GLSurfaceView.Renderer {
             drawable.load()
             drawables.add(drawable)
         }
+        drawables.removeAll(toRemove)
+        toRemove.clear()
 
         // Redraw background color
         glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT)
@@ -124,9 +126,8 @@ class GameRenderer(private val context: Context) : GLSurfaceView.Renderer {
         // TODO: See if it is possible to move uniform passing to a more seldom executed method
         shaders.values.forEach { id ->
             glUseProgram(id)
-            glUniformMatrix4fv(glGetUniformLocation(id, "mProjection"), 1, false, projectionMatrix, 0)
-
             glUniform3fv(glGetUniformLocation(id, "vCamPos"), 1, camPosBuffer)
+            glUniformMatrix4fv(glGetUniformLocation(id, "mProjection"), 1, false, projectionMatrix, 0)
             glUniformMatrix4fv(glGetUniformLocation(id, "mView"), 1, false, viewMatrix, 0)
         }
 
@@ -147,7 +148,9 @@ class GameRenderer(private val context: Context) : GLSurfaceView.Renderer {
     override fun onSurfaceChanged(unused: GL10, width: Int, height: Int) {
         glViewport(0, 0, width, height)
 
-        userInterface?.screenDimensions = Vec2(width/context.resources.displayMetrics.xdpi, height/context.resources.displayMetrics.ydpi)
+        //userInterface?.screenDimensions = Vec2(width/context.resources.displayMetrics.xdpi, height/context.resources.displayMetrics.ydpi)
+        userInterface?.screenDimensions = Vec2(context.resources.displayMetrics.widthPixels.toFloat()/context.resources.displayMetrics.densityDpi, context.resources.displayMetrics.heightPixels.toFloat()/context.resources.displayMetrics.densityDpi)
+        userInterface?.screenResolution = Vec2(context.resources.displayMetrics.widthPixels.toFloat(), context.resources.displayMetrics.heightPixels.toFloat())
 
         updateProjectionMatrix(width, height)
     }

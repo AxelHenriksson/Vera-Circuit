@@ -7,10 +7,15 @@ import android.opengl.GLES31.*
 import android.opengl.GLSurfaceView
 import android.util.AttributeSet
 import android.util.Log
+import android.view.MotionEvent
 import java.util.ArrayList
+import kotlin.math.PI
+import kotlin.math.atan2
+import kotlin.math.pow
+import kotlin.math.sqrt
 
 @Suppress("LeakingThis")
-open class GameSurfaceView(context: Context, attr: AttributeSet) : GLSurfaceView(context) {
+abstract class GameSurfaceView(context: Context, attr: AttributeSet) : GLSurfaceView(context) {
 
     val renderer: GameRenderer
 
@@ -23,14 +28,32 @@ open class GameSurfaceView(context: Context, attr: AttributeSet) : GLSurfaceView
         glDepthFunc( GL_LEQUAL )
         glDepthMask( true )
 
+        Log.d("DENSITY", context.resources.displayMetrics.density.toString())
+        Log.d("DENSITY", context.resources.displayMetrics.xdpi.toString())
+        Log.d("DENSITY", context.resources.displayMetrics.ydpi.toString())
+        Log.d("DENSITY", context.resources.displayMetrics.densityDpi.toString())
+
         renderer = GameRenderer(context)
 
         // Set the Renderer for drawing on the GLSurfaceView
         setRenderer(renderer)
 
         // Render the view only when there is a change in the drawing data
-        renderMode = RENDERMODE_WHEN_DIRTY
+        renderMode = RENDERMODE_CONTINUOUSLY  // TODO: Turn this back to RENDERMODE_WHEN_DIRTY
 
+    }
+
+    abstract fun onTouchWorld(event: MotionEvent)
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        // When we touch or release the OpenGL surface we send the event to the UI, if we didn't touch the UI we send the event to the
+        Log.d(TAG, "onTouchEvent() called")
+
+        renderer.userInterface?.let { ui ->
+            if (!ui.getTouched(event))
+                onTouchWorld(event)
+        }
+
+        return true
     }
 
     private data class Vertex(val pos: Vec3, val texCoord: Vec2, val normal: Vec3)
@@ -245,7 +268,6 @@ open class GameSurfaceView(context: Context, attr: AttributeSet) : GLSurfaceView
             shader = shader
         )
     }
-
 
     fun getBitmap(asset: String): Bitmap {
             //val opts = BitmapFactory.Options()

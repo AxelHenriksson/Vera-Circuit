@@ -1,7 +1,9 @@
 package com.axehen.boscage
 
 import android.content.Context
+import android.opengl.GLES31
 import android.util.AttributeSet
+import android.util.Log
 import android.view.MotionEvent
 import com.axehen.hengine.*
 import kotlin.math.PI
@@ -18,37 +20,25 @@ class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.
         speed = 0.09f,
         meshes = parseOBJMTL( "models/character"))
 
-    private val environment = Environment()
-    private val userInterface = UserInterface(
-        screenDimensions = Vec2(resources.displayMetrics.widthPixels.toFloat()/resources.displayMetrics.xdpi, resources.displayMetrics.heightPixels.toFloat()/resources.displayMetrics.ydpi)
+    private val grassShader = Shader(
+        renderer = renderer,
+        shaderAsset = "shaders/textured",
+        textures = arrayOf(
+            Texture(getBitmap("textures/grass.png"), "tex0"),
+            Texture(getBitmap("textures/earth.png"), "tex_ao")
+        )
+    )
+    private val earthShader = Shader(
+        renderer = renderer,
+        shaderAsset = "shaders/textured",
+        textures = arrayOf(
+            Texture(getBitmap("textures/earth.png"), "tex0"),
+            Texture(getBitmap("textures/earth.png"), "tex_ao")
+        )
     )
 
-    init {
-
-        renderer.lookAt = Vec3(0f, 0f, 0.5f)
-        renderer.lookFrom = Vec3(0f, -7f, 7f)    // Offset from lookAt from which to look
-        renderer.zoom = 0.2f
-
-        renderer.onDrawCallback =  { onDrawCallback() }
-
-        val grassShader = Shader(
-            renderer = renderer,
-            shaderAsset = "shaders/textured",
-            textures = arrayOf(
-                Texture(getBitmap("textures/grass.png"), "tex0"),
-                Texture(getBitmap("textures/earth.png"), "tex_ao")
-            )
-        )
-        val earthShader = Shader(
-            renderer = renderer,
-            shaderAsset = "shaders/textured",
-            textures = arrayOf(
-                Texture(getBitmap("textures/earth.png"), "tex0"),
-                Texture(getBitmap("textures/earth.png"), "tex_ao")
-            )
-        )
-
-        environment.groundMesh =
+    private var world = Environment().also { env ->
+        env.groundMesh =
             CompoundMesh(
                 position = Vec3(0f, 0f, 0f),
                 rotation = Rotation(0f, 0f, 0f, 1f),
@@ -57,8 +47,8 @@ class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.
                         vertexCoords = floatArrayOf(
                             -50f, -50f, 0f,
                             50f, -50f, 0f,
-                            50f,   10f, 0f,
-                            -50f,   10f, 0f
+                            50f, 10f, 0f,
+                            -50f, 10f, 0f
                         ),
                         normals = floatArrayOf(
                             0f, 0f, 1f,
@@ -69,8 +59,8 @@ class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.
                         texCoords = floatArrayOf(
                             -50f, -50f,
                             50f, -50f,
-                            50f,   10f,
-                            -50f,   10f,
+                            50f, 10f,
+                            -50f, 10f,
                         ),
                         drawOrder = intArrayOf(
                             0, 1, 2,
@@ -105,8 +95,8 @@ class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.
                     ),
                     Mesh(
                         vertexCoords = floatArrayOf(
-                            -50f,  11f, 1f,
-                            50f,  11f, 1f,
+                            -50f, 11f, 1f,
+                            50f, 11f, 1f,
                             50f, 50f, 1f,
                             -50f, 50f, 1f
                         ),
@@ -117,8 +107,8 @@ class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.
                             0f, 0f, 1f,
                         ),
                         texCoords = floatArrayOf(
-                            -50f,  11f,
-                            50f,  11f,
+                            -50f, 11f,
+                            50f, 11f,
                             50f, 50f,
                             -50f, 50f,
                         ),
@@ -131,35 +121,204 @@ class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.
                 )
             )
 
-        val houseMeshList = parseOBJMTL( "models/house")
-        environment.objects.addAll(
+        val houseMeshList = parseOBJMTL("models/house")
+        env.objects.addAll(
             arrayOf(
-                Environment.EnvironmentObject(Vec3(-3f, 3f, 0f),    Rotation(180f, 0f, 0f, 1f), houseMeshList, Environment.SquareCollidable(1f, 45f)),
-                Environment.EnvironmentObject(Vec3(3f, 3f, 0f),     Rotation(90f, 0f, 0f, 1f),  houseMeshList, Environment.SquareCollidable(1f, 45f)),
-                Environment.EnvironmentObject(Vec3(3f, -3f, 0f),    Rotation(90f, 0f, 0f, 1f),  houseMeshList, Environment.SquareCollidable(1f, 45f)),
-                Environment.EnvironmentObject(Vec3(-3f, -3f, 0f),   Rotation(180f, 0f, 0f, 1f), houseMeshList, Environment.SquareCollidable(1f, 45f)),
+                Environment.EnvironmentObject(
+                    Vec3(-3f, 3f, 0f),
+                    Rotation(180f, 0f, 0f, 1f),
+                    houseMeshList,
+                    Environment.SquareCollidable(1f, 45f)
+                ),
+                Environment.EnvironmentObject(
+                    Vec3(3f, 3f, 0f),
+                    Rotation(90f, 0f, 0f, 1f),
+                    houseMeshList,
+                    Environment.SquareCollidable(1f, 45f)
+                ),
+                Environment.EnvironmentObject(
+                    Vec3(3f, -3f, 0f),
+                    Rotation(90f, 0f, 0f, 1f),
+                    houseMeshList,
+                    Environment.SquareCollidable(1f, 45f)
+                ),
+                Environment.EnvironmentObject(
+                    Vec3(-3f, -3f, 0f),
+                    Rotation(180f, 0f, 0f, 1f),
+                    houseMeshList,
+                    Environment.SquareCollidable(1f, 45f)
+                ),
             )
         )
+    }
+    private var inside = false
+    private var houseInterior = Environment().also { env ->
+        env.groundMesh =
+            CompoundMesh(
+                position = Vec3(0f, 0f, 0f),
+                rotation = Rotation(45f, 0f, 0f, 1f),
+                arrayListOf(
+                    Mesh(
+                        vertexCoords = floatArrayOf(
+                            -5f, -5f, 0f,
+                             5f, -5f, 0f,
+                             5f,  5f, 0f,
+                            -5f,  5f, 0f
+                        ),
+                        normals = floatArrayOf(
+                            0f, 0f, 1f,
+                            0f, 0f, 1f,
+                            0f, 0f, 1f,
+                            0f, 0f, 1f,
+                        ),
+                        texCoords = floatArrayOf(
+                            -5f, -5f,
+                            5f, -5f,
+                            5f,  5f,
+                            -5f,  5f
+                        ),
+                        drawOrder = intArrayOf(
+                            0, 1, 2,
+                            0, 2, 3
+                        ),
+                        shader = grassShader
+                    ),
+                    Mesh(
+                        vertexCoords = floatArrayOf(
+                            -5f,  5f, 0f,
+                             5f,  5f, 0f,
+                             5f,  5f, 2f,
+                            -5f,  5f, 2f
+                        ),
+                        normals = floatArrayOf(
+                            0f, -1f, 0f,
+                            0f, -1f, 0f,
+                            0f, -1f, 0f,
+                            0f, -1f, 0f,
+                        ),
+                        texCoords = floatArrayOf(
+                            0f, 0f,
+                            5f, 0f,
+                            5f,  1f,
+                            0f,  1f
+                        ),
+                        drawOrder = intArrayOf(
+                            0, 1, 2,
+                            0, 2, 3
+                        ),
+                        shader = earthShader
+                    ),
+                    Mesh(
+                        vertexCoords = floatArrayOf(
+                            5f,   5f, 0f,
+                            5f,  -5f, 0f,
+                            5f,  -5f, 2f,
+                            5f,   5f, 2f
+                        ),
+                        normals = floatArrayOf(
+                            -1f, 0f, 0f,
+                            -1f, 0f, 0f,
+                            -1f, 0f, 0f,
+                            -1f, 0f, 0f,
+                        ),
+                        texCoords = floatArrayOf(
+                            0f, 0f,
+                            5f, 0f,
+                            5f,  1f,
+                            0f,  1f
+                        ),
+                        drawOrder = intArrayOf(
+                            0, 1, 2,
+                            0, 2, 3
+                        ),
+                        shader = earthShader
+                    )
+                )
+        )
 
-        val aButtonShader = Shader(renderer, "shaders/ui", arrayOf(Texture(getBitmap("textures/ButtonIcon-GCN-A.png"), "tex0")))
-        val bButtonShader = Shader(renderer, "shaders/ui", arrayOf(Texture(getBitmap("textures/ButtonIcon-GCN-B.png"), "tex0")))
-        userInterface.elements.add(UIRectangle(
-            dimensions = Vec2(2f/2.54f, 2f/2.54f),
-            margins = Vec2(1f/2.54f, 1.5f/2.54f),
+        val characterMeshList = parseOBJMTL("models/character")
+        env.objects.add(
+            Environment.EnvironmentObject(
+                Vec3(-1f, 1f, 0f),
+                Rotation(180f, 0f, 0f, 1f),
+                characterMeshList,
+                Environment.CircleCollidable(0.3f)
+            )
+        )
+    }
+
+    private var environment = world
+
+    private var userInterface = UserInterface(
+        screenDimensions = Vec2(resources.displayMetrics.widthPixels.toFloat()/resources.displayMetrics.xdpi, resources.displayMetrics.heightPixels.toFloat()/resources.displayMetrics.ydpi),
+        screenResolution = Vec2(resources.displayMetrics.widthPixels.toFloat(), resources.displayMetrics.heightPixels.toFloat())
+    ).also { ui ->
+        val aButtonShader = Shader(
+            renderer,
+            "shaders/ui",
+            arrayOf(
+                Texture(getBitmap("textures/ButtonIcon-GCN-A.png"), "tex0"),
+                Texture(getBitmap("textures/ButtonIcon-GCN-A_pressed.png"), "texPressed")
+            )
+        )
+        val bButtonShader = Shader(
+            renderer,
+            "shaders/ui",
+            arrayOf(
+                Texture(getBitmap("textures/ButtonIcon-GCN-B.png"), "tex0"),
+                Texture(getBitmap("textures/ButtonIcon-GCN-B_pressed.png"), "texPressed")
+            )
+        )
+        ui.buttons.add(
+            UIRectangle.UIButton(
+                dimensions = Vec2(2f / 2.54f, 2f / 2.54f),
+                margins = Vec2(0.2f / 2.54f, 1f / 2.54f),
+                anchor = UIRectangle.Companion.UIAnchor.BOTTOM_RIGHT,
+                shader = aButtonShader,
+                collidable = UIRectangle.CircleUICollidable((3f / 4f) * 1f / 2.54f),
+                action = { action ->
+                    Log.d(TAG, "aButtonPressed")
+                    if(action == MotionEvent.ACTION_DOWN) {
+                        if (inside) {
+                            renderer.remove(houseInterior)
+                            renderer.add(world)
+                            environment = world
+                            inside = false
+                        } else {
+                            renderer.remove(world)
+                            renderer.add(houseInterior)
+                            environment = houseInterior
+                            inside = true
+                        }
+                    }
+                }
+            )
+        )
+        ui.buttons.add(UIRectangle.UIButton(
+            dimensions = Vec2(2f / 2.54f, 2f / 2.54f),
+            margins = Vec2(1.2f / 2.54f, -0.1f / 2.54f),
             anchor = UIRectangle.Companion.UIAnchor.BOTTOM_RIGHT,
-            shader = aButtonShader))
-        userInterface.elements.add(UIRectangle(
-            dimensions = Vec2(2f/2.54f, 2f/2.54f),
-            margins = Vec2(2f/2.54f, 0.5f/2.54f),
-            anchor = UIRectangle.Companion.UIAnchor.BOTTOM_RIGHT,
-            shader = bButtonShader))
+            shader = bButtonShader,
+            collidable = UIRectangle.CircleUICollidable((1f / 2f) * 1f / 2.54f),
+            action = {
+                Log.d(TAG, "bButtonPressed")
+                character.speed -= 0.01f
+            }
+        )
+        )
+    }
+
+    init {
+
+        renderer.lookAt = Vec3(0f, 0f, 0.5f)
+        renderer.lookFrom = Vec3(0f, -7f, 7f)    // Offset from lookAt from which to look
+        renderer.zoom = 0.2f
+
+        renderer.onDrawCallback =  { onDrawCallback() }
 
         renderer.add(character)
-        renderer.add(environment)
+        renderer.add(world)
         renderer.userInterface = userInterface
-
-
-
 
     }
 
@@ -170,7 +329,8 @@ class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.
 
     private var stickPos: Vec2 = Vec2(0f, 0f)
 
-    override fun onTouchEvent(event: MotionEvent): Boolean {
+    override fun onTouchWorld(event: MotionEvent) {
+        Log.d(TAG, "onTouchWorld called")
         val x = event.x
         val y = event.y
         val dist: Float = if (event.pointerCount == 2) sqrt((event.getX(0)-event.getX(1)).pow(2) + (event.getY(0)-event.getY(1)).pow(2)) else 0f
@@ -178,13 +338,13 @@ class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.
         //Log.d("GameSurfaceView",event.toString())
         when(event.action) {
             MotionEvent.ACTION_DOWN -> {
-                renderMode = RENDERMODE_CONTINUOUSLY
+                //renderMode = RENDERMODE_CONTINUOUSLY
             }
             MotionEvent.ACTION_UP -> {
                 stickPos.x = 0f
                 stickPos.y = 0f
                 character.velocity = Vec3(0f, 0f, 0f)
-                renderMode = RENDERMODE_WHEN_DIRTY
+                //renderMode = RENDERMODE_WHEN_DIRTY
             }
             MotionEvent.ACTION_MOVE -> {
 
@@ -217,8 +377,6 @@ class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.
         previousX = x
         previousY = y
         prevDist = dist
-
-        return true
     }
 
 
