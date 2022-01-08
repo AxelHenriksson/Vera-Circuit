@@ -66,6 +66,10 @@ open class UIRectangle(var dimensions: Vec2, var margins: Vec2, var anchor: UIAn
             UIAnchor.TOP_RIGHT      -> Vec2(screenDimensions.x - margins.x-dimensions.x/2,  screenDimensions.y - margins.y - dimensions.y/2)
             UIAnchor.BOTTOM_LEFT    -> Vec2(                     margins.x+dimensions.x/2,                       margins.y + dimensions.y/2)
             UIAnchor.BOTTOM_RIGHT   -> Vec2(screenDimensions.x - margins.x-dimensions.x/2,                       margins.y + dimensions.y/2)
+            UIAnchor.TOP_MIDDLE     -> Vec2(screenDimensions.x/2f + margins.x,                                         screenDimensions.y - margins.y - dimensions.y/2)
+            UIAnchor.BOTTOM_MIDDLE  -> Vec2(screenDimensions.x/2f + margins.x,                                         margins.y + dimensions.y/2)
+            UIAnchor.LEFT_MIDDLE    -> Vec2(margins.x + dimensions.x/2,                        screenDimensions.y/2f + margins.y)
+            UIAnchor.RIGHT_MIDDLE   -> Vec2(screenDimensions.x - margins.x-dimensions.x/2,     screenDimensions.y/2f + margins.y)
         }
     }
 
@@ -141,13 +145,20 @@ open class UIRectangle(var dimensions: Vec2, var margins: Vec2, var anchor: UIAn
         // Create a matrix to scale and move UIRectangle
         FloatArray(16).let { matrix ->
             Matrix.setIdentityM(matrix, 0)
-            val xOffset = 2*(margins.x+dimensions.x/2)/screenDimensions.x
-            val yOffset = 2*(margins.y+dimensions.y/2)/screenDimensions.y
+            val xMargin = margins.x*2f/screenDimensions.x   // Margin (offset) in opengl coordinates (-1f to 1f)
+            val yMargin = margins.y*2f/screenDimensions.y
+            val xRadius = dimensions.x/screenDimensions.x   // Distance from center of UIRect to edge in opengl coordinates (-1f to 1f)
+            val yRadius = dimensions.y/screenDimensions.y
+
             when (anchor) {
-                UIAnchor.TOP_LEFT       -> Matrix.translateM(matrix, 0, -1f + xOffset,  1f - yOffset, 0f)
-                UIAnchor.TOP_RIGHT      -> Matrix.translateM(matrix, 0,  1f - xOffset,  1f - yOffset, 0f)
-                UIAnchor.BOTTOM_LEFT    -> Matrix.translateM(matrix, 0, -1f + xOffset, -1f + yOffset, 0f)
-                UIAnchor.BOTTOM_RIGHT   -> Matrix.translateM(matrix, 0,  1f - xOffset, -1f + yOffset, 0f)
+                UIAnchor.TOP_LEFT       -> Matrix.translateM(matrix, 0, -1f + xRadius + xMargin,  1f - yRadius - yMargin, 0f)
+                UIAnchor.TOP_RIGHT      -> Matrix.translateM(matrix, 0,  1f - xRadius - xMargin,  1f - yRadius - yMargin, 0f)
+                UIAnchor.BOTTOM_LEFT    -> Matrix.translateM(matrix, 0, -1f + xRadius + xMargin, -1f + yRadius + yMargin, 0f)
+                UIAnchor.BOTTOM_RIGHT   -> Matrix.translateM(matrix, 0,  1f - xRadius - xMargin, -1f + yRadius + yMargin, 0f)
+                UIAnchor.BOTTOM_MIDDLE  -> Matrix.translateM(matrix, 0,  xMargin,                   -1f + yRadius + yMargin, 0f)
+                UIAnchor.TOP_MIDDLE     -> Matrix.translateM(matrix, 0,  xMargin,                    1f - yRadius - yMargin, 0f)
+                UIAnchor.LEFT_MIDDLE    -> Matrix.translateM(matrix, 0,  -1f + xRadius + xMargin,    yMargin, 0f)
+                UIAnchor.RIGHT_MIDDLE   -> Matrix.translateM(matrix, 0,   1f - xRadius - xMargin,    yMargin, 0f)
             }
             Matrix.scaleM(matrix, 0, dimensions.x/screenDimensions.x, dimensions.y/screenDimensions.y, 0f)
             GLES31.glUniformMatrix4fv(
@@ -180,6 +191,10 @@ open class UIRectangle(var dimensions: Vec2, var margins: Vec2, var anchor: UIAn
             TOP_RIGHT,
             BOTTOM_LEFT,
             BOTTOM_RIGHT,
+            TOP_MIDDLE,
+            LEFT_MIDDLE,
+            RIGHT_MIDDLE,
+            BOTTOM_MIDDLE
         }
     }
 }

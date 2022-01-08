@@ -1,7 +1,6 @@
 package com.axehen.boscage
 
 import android.content.Context
-import android.opengl.GLES31
 import android.util.AttributeSet
 import android.util.Log
 import android.view.MotionEvent
@@ -269,10 +268,59 @@ class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.
                 Texture(getBitmap("textures/ButtonIcon-GCN-B_pressed.png"), "texPressed")
             )
         )
+        val yButtonShader = Shader(
+            renderer,
+            "shaders/ui",
+            arrayOf(
+                Texture(getBitmap("textures/ButtonIcon-GCN-Y.png"), "tex0"),
+                Texture(getBitmap("textures/ButtonIcon-GCN-Y_pressed.png"), "texPressed")
+            )
+        )
+        val xButtonShader = Shader(
+            renderer,
+            "shaders/ui",
+            arrayOf(
+                Texture(getBitmap("textures/ButtonIcon-GCN-X.png"), "tex0"),
+                Texture(getBitmap("textures/ButtonIcon-GCN-X_pressed.png"), "texPressed")
+            )
+        )
+        val startButtonShader = Shader(
+            renderer,
+            "shaders/ui",
+            arrayOf(
+                Texture(getBitmap("textures/ButtonIcon-GCN-Start-Pause.png"), "tex0"),
+                Texture(getBitmap("textures/ButtonIcon-GCN-Start-Pause_pressed.png"), "texPressed")
+            )
+        )
+
+        ui.buttons.add(UIRectangle.UIButton(
+            dimensions = Vec2(2f / 2.54f, 2f / 2.54f),
+            margins = Vec2(-0.4f / 2.54f, 1.3f / 2.54f),
+            anchor = UIRectangle.Companion.UIAnchor.BOTTOM_RIGHT,
+            shader = xButtonShader,
+            collidable = UIRectangle.CircleUICollidable((1f / 2f) * 1f / 2.54f),
+            action = {
+                Log.d(TAG, "xButtonPressed")
+                character.speed += 0.01f
+            }
+        )
+        )
+        ui.buttons.add(UIRectangle.UIButton(
+            dimensions = Vec2(2f / 2.54f, 2f / 2.54f),
+            margins = Vec2(1f / 2.54f, 2.05f / 2.54f),
+            anchor = UIRectangle.Companion.UIAnchor.BOTTOM_RIGHT,
+            shader = yButtonShader,
+            collidable = UIRectangle.CircleUICollidable((1f / 2f) * 1f / 2.54f),
+            action = {
+                Log.d(TAG, "yButtonPressed")
+                character.speed -= 0.01f
+            }
+        )
+        )
         ui.buttons.add(
             UIRectangle.UIButton(
                 dimensions = Vec2(2f / 2.54f, 2f / 2.54f),
-                margins = Vec2(0.2f / 2.54f, 1f / 2.54f),
+                margins = Vec2(0.7f / 2.54f, 0.9f / 2.54f),
                 anchor = UIRectangle.Companion.UIAnchor.BOTTOM_RIGHT,
                 shader = aButtonShader,
                 collidable = UIRectangle.CircleUICollidable((3f / 4f) * 1f / 2.54f),
@@ -296,13 +344,23 @@ class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.
         )
         ui.buttons.add(UIRectangle.UIButton(
             dimensions = Vec2(2f / 2.54f, 2f / 2.54f),
-            margins = Vec2(1.2f / 2.54f, -0.1f / 2.54f),
+            margins = Vec2(1.7f / 2.54f, -0.1f / 2.54f),
             anchor = UIRectangle.Companion.UIAnchor.BOTTOM_RIGHT,
             shader = bButtonShader,
             collidable = UIRectangle.CircleUICollidable((1f / 2f) * 1f / 2.54f),
             action = {
                 Log.d(TAG, "bButtonPressed")
-                character.speed -= 0.01f
+            }
+        )
+        )
+        ui.buttons.add(UIRectangle.UIButton(
+            dimensions = Vec2(2f / 2.54f, 2f / 2.54f),
+            margins = Vec2(0f / 2.54f, 0f / 2.54f),
+            anchor = UIRectangle.Companion.UIAnchor.BOTTOM_MIDDLE,
+            shader = startButtonShader,
+            collidable = UIRectangle.CircleUICollidable((1f / 2f) * 1f / 2.54f),
+            action = {
+                Log.d(TAG, "startButtonPressed")
             }
         )
         )
