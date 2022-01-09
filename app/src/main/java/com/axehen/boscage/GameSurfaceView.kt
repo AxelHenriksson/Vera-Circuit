@@ -252,6 +252,7 @@ class GameSurfaceView(context: Context, attr: AttributeSet): com.axehen.hengine.
         screenDimensions = Vec2(resources.displayMetrics.widthPixels.toFloat()/resources.displayMetrics.xdpi, resources.displayMetrics.heightPixels.toFloat()/resources.displayMetrics.ydpi),
         screenResolution = Vec2(resources.displayMetrics.widthPixels.toFloat(), resources.displayMetrics.heightPixels.toFloat())
     ).also { ui ->
+        ui.scale = 0.7f
         val aButtonShader = Shader(
             renderer,
             "shaders/ui",

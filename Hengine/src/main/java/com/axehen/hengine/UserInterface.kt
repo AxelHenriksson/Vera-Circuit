@@ -8,6 +8,8 @@ class UserInterface(var screenDimensions: Vec2, var screenResolution: Vec2): Dra
     val elements = ArrayList<UIRectangle>()
     val buttons = ArrayList<UIRectangle.UIButton>()
 
+    var scale = 1f
+
 
     override fun load() {
         elements.forEach { it.load() }
@@ -15,8 +17,8 @@ class UserInterface(var screenDimensions: Vec2, var screenResolution: Vec2): Dra
     }
 
     override fun draw() {
-        elements.forEach { it.draw(screenDimensions) }
-        buttons.forEach { it.draw(screenDimensions) }
+        elements.forEach { it.draw(screenDimensions / scale) }
+        buttons.forEach { it.draw(screenDimensions / scale) }
     }
 
 
@@ -32,7 +34,7 @@ class UserInterface(var screenDimensions: Vec2, var screenResolution: Vec2): Dra
 
         for (button in buttons) {
             //Log.d(TAG, "Button tested")
-            if (button.touch(Vec2(xInches, yInches), screenDimensions, event)) {
+            if (button.touch(Vec2(xInches, yInches), screenDimensions, scale, event)) {
                 //Log.d(TAG, "button touched at xInches=$xInches, yInches=$yInches")
                     when(event.action) {
                         MotionEvent.ACTION_DOWN -> {

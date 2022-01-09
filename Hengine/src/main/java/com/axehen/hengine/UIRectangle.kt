@@ -17,10 +17,10 @@ import java.nio.IntBuffer
  */
 open class UIRectangle(var dimensions: Vec2, var margins: Vec2, var anchor: UIAnchor, protected val shader: Shader) {
     interface UICollidable {
-        fun isWithin(buttonOrigin: Vec2, touchPos: Vec2): Boolean
+        fun isWithin(buttonOrigin: Vec2, scale: Float, touchPos: Vec2): Boolean
     }
     class CircleUICollidable(private val radius: Float): UICollidable {
-        override fun isWithin(buttonOrigin: Vec2, touchPos: Vec2): Boolean = (buttonOrigin - touchPos).length() <= radius
+        override fun isWithin(buttonOrigin: Vec2, scale: Float, touchPos: Vec2): Boolean = (buttonOrigin - touchPos).length() <= radius * scale
     }
     class UIButton(dimensions: Vec2, margins: Vec2, anchor: UIAnchor, shader: Shader, val collidable: UICollidable, val action: (pressed: Int) -> Unit): UIRectangle(dimensions, margins, anchor, shader) {
         var isPressed = false
@@ -30,9 +30,9 @@ open class UIRectangle(var dimensions: Vec2, var margins: Vec2, var anchor: UIAn
          * @param y Y touch coordinate in inches
          * @return true if the touch was on the element, false otherwise
          */
-        fun touch(touchPos: Vec2, screenDimensions: Vec2, event: MotionEvent): Boolean {
+        fun touch(touchPos: Vec2, screenDimensions: Vec2, scale: Float, event: MotionEvent): Boolean {
             Log.d("UIButton", "button.touch() called")
-            return if(collidable.isWithin(getOrigin(screenDimensions), touchPos)) {
+            return if(collidable.isWithin(getOrigin(screenDimensions, scale), scale, touchPos)) {
                 when(event.action) {
                     MotionEvent.ACTION_UP -> {
                         Log.d(TAG, "isPressed set to false")
@@ -60,16 +60,19 @@ open class UIRectangle(var dimensions: Vec2, var margins: Vec2, var anchor: UIAn
     /**
      * @return the UIRectangles origin in inches
      */
-    protected fun getOrigin(screenDimensions: Vec2): Vec2 {
+    protected fun getOrigin(screenDimensions: Vec2, scale: Float): Vec2 {
+        val xOffset = (margins.x+dimensions.x/2) * scale
+        val yOffset = (margins.y+dimensions.y/2) * scale
+
         return when (anchor) {
-            UIAnchor.TOP_LEFT       -> Vec2(                     margins.x+dimensions.x/2,  screenDimensions.y - margins.y - dimensions.y/2)
-            UIAnchor.TOP_RIGHT      -> Vec2(screenDimensions.x - margins.x-dimensions.x/2,  screenDimensions.y - margins.y - dimensions.y/2)
-            UIAnchor.BOTTOM_LEFT    -> Vec2(                     margins.x+dimensions.x/2,                       margins.y + dimensions.y/2)
-            UIAnchor.BOTTOM_RIGHT   -> Vec2(screenDimensions.x - margins.x-dimensions.x/2,                       margins.y + dimensions.y/2)
-            UIAnchor.TOP_MIDDLE     -> Vec2(screenDimensions.x/2f + margins.x,                                         screenDimensions.y - margins.y - dimensions.y/2)
-            UIAnchor.BOTTOM_MIDDLE  -> Vec2(screenDimensions.x/2f + margins.x,                                         margins.y + dimensions.y/2)
-            UIAnchor.LEFT_MIDDLE    -> Vec2(margins.x + dimensions.x/2,                        screenDimensions.y/2f + margins.y)
-            UIAnchor.RIGHT_MIDDLE   -> Vec2(screenDimensions.x - margins.x-dimensions.x/2,     screenDimensions.y/2f + margins.y)
+            UIAnchor.TOP_LEFT       -> Vec2(                        xOffset,  screenDimensions.y - yOffset)
+            UIAnchor.TOP_RIGHT      -> Vec2(screenDimensions.x - xOffset,  screenDimensions.y - yOffset)
+            UIAnchor.BOTTOM_LEFT    -> Vec2(                        xOffset,                          yOffset)
+            UIAnchor.BOTTOM_RIGHT   -> Vec2(screenDimensions.x - xOffset,                          yOffset)
+            UIAnchor.TOP_MIDDLE     -> Vec2(screenDimensions.x/2f + margins.x * scale,screenDimensions.y - yOffset)
+            UIAnchor.BOTTOM_MIDDLE  -> Vec2(screenDimensions.x/2f + margins.x * scale,                        yOffset)
+            UIAnchor.LEFT_MIDDLE    -> Vec2(                        xOffset,             screenDimensions.y/2f + margins.y * scale)
+            UIAnchor.RIGHT_MIDDLE   -> Vec2(screenDimensions.x - xOffset,             screenDimensions.y/2f + margins.y * scale)
         }
     }
 
