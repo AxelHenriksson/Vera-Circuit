@@ -1,19 +1,17 @@
 package com.axehen.hengine
 
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sin
 
-/**
- * A class containing and handling the game environment i.e. ground mesh and all world objects
- */
+/** A class containing and handling the game environment i.e. ground mesh and all world objects */
 class Environment : Drawable {
 
-    /**
-     * A world objects containing a mesh and collidable that handles its collisions
-     */
-    class EnvironmentObject(position: Vec3, rotation: Rotation, meshes: List<Mesh>, val collidable: Collidable): CompoundMesh(position, rotation, meshes) {
+    /** A world objects containing a mesh and collidable that handles its collisions */
+    class EnvironmentObject(position: Vec3, rotation: Rotation, meshes: List<Mesh>, private val collidable: Collidable): StaticMesh(
+        position, rotation, meshes) {
         fun getCollisionVector(charPos: Vec2, charRadius: Float): Vec2? {
             return collidable.getCollisionVector(charPos, charRadius, Vec2(position.x, position.y))
         }
@@ -58,7 +56,7 @@ class Environment : Drawable {
     }
 
     val objects = ArrayList<EnvironmentObject>()
-    var groundMesh: CompoundMesh? = null
+    var groundMesh: StaticMesh? = null
 
     /**
      * Checks collisions between the character and every object in the environment

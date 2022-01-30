@@ -9,9 +9,9 @@ import java.nio.IntBuffer
 
 /**
  * @param bitmaps An array of 6 face bitmaps
- * @param uniform The shader uniform to which hte cubemap is mapped
+ * @param uniform The shader uniform to which hte cubeMap is mapped
  */
-class Cubemap(bitmaps: Array<Bitmap>, val uniform: String) {
+class CubeMap(bitmaps: Array<Bitmap>, val uniform: String) {
     private val buffers: Array<ByteBuffer> = Array(6) { getBitmapBuffer(bitmaps[it]) }
 
     var id      = -1
@@ -21,13 +21,13 @@ class Cubemap(bitmaps: Array<Bitmap>, val uniform: String) {
 
     init {
         // Validate the provided bitmap set
-        if (bitmaps.size != 6) throw IllegalArgumentException("6 bitmaps are required when initializing a Cubemap, however ${bitmaps.size} were provided")
-        if(bitmaps[0].height != bitmaps[0].width)  throw IllegalArgumentException("Cubemap bitmaps are not square")
+        if (bitmaps.size != 6) throw IllegalArgumentException("6 bitmaps are required when initializing a CubeMap, however ${bitmaps.size} were provided")
+        if(bitmaps[0].height != bitmaps[0].width)  throw IllegalArgumentException("CubeMap bitmaps are not square")
         for(i in 0 until bitmaps.size-1) {
             val bmp1 = bitmaps[i]
             val bmp2 = bitmaps[i+1]
-            if(bmp1.width  != bmp2.width)  throw IllegalArgumentException("Cubemap bitmaps are not the same width")
-            if(bmp1.height != bmp2.height) throw IllegalArgumentException("Cubemap bitmaps are not the same height")
+            if(bmp1.width  != bmp2.width)  throw IllegalArgumentException("CubeMap bitmaps are not the same width")
+            if(bmp1.height != bmp2.height) throw IllegalArgumentException("CubeMap bitmaps are not the same height")
         }
     }
 

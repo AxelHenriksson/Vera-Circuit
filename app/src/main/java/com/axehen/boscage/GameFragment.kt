@@ -16,4 +16,15 @@ class GameFragment : Fragment() {
         return inflater.inflate(R.layout.fragment_game, container, false)
     }
 
+    override fun onResume() {
+        super.onResume()
+
+        (view as Game).startTick()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        (view as Game).stopTick()
+    }
+
 }

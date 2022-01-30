@@ -9,13 +9,13 @@ import java.nio.ByteBuffer.allocateDirect
 
 open class Mesh(
     vertexCoords: FloatArray,
-    normals: FloatArray,
+    normals: FloatArray?,
     texCoords: FloatArray,
     val drawOrder: IntArray,
     val shader: Shader
 ) {
 
-
+    constructor(vertexCoords: FloatArray, texCoords: FloatArray, drawOrder: IntArray, shader: Shader): this(vertexCoords, null, texCoords, drawOrder, shader)
 
     private var vertexBuffer: FloatBuffer =
         // (number of coordinate values * 4 bytes per float)
@@ -32,18 +32,21 @@ open class Mesh(
             }
         }
 
-    private var normalBuffer: FloatBuffer =
-        // (number of normal values * 4 bytes per float)
-        allocateDirect(normals.size * 4).run {
 
-            // use the device hardware's native byte order
-            order(ByteOrder.nativeOrder())
 
-            asFloatBuffer().apply {
-                put(normals)
-                position(0)
+        private var normalBuffer: FloatBuffer? = if (normals != null) {
+            // (number of normal values * 4 bytes per float)
+            allocateDirect(normals.size * 4).run {
+
+                // use the device hardware's native byte order
+                order(ByteOrder.nativeOrder())
+
+                asFloatBuffer().apply {
+                    put(normals)
+                    position(0)
+                }
             }
-        }
+        } else null
 
     private val texCoordBuffer: FloatBuffer =
         // (number of coordinate values * 4 bytes per float)
@@ -70,7 +73,7 @@ open class Mesh(
 
     init {
         if (vertexCoords.size % COORDS_PER_VERTEX != 0) throw IllegalArgumentException("Vertex coordinate count is not divisible by coordsPerVertex (${COORDS_PER_VERTEX})")
-        if (normals.size % COORDS_PER_VERTEX != 0) throw IllegalArgumentException("Vertex normal vector count is not divisible by coordsPerVertex (${COORDS_PER_VERTEX})")
+        if (normals != null && normals.size % COORDS_PER_VERTEX != 0) throw IllegalArgumentException("Vertex normal vector count is not divisible by coordsPerVertex (${COORDS_PER_VERTEX})")
         if (drawOrder.size % COORDS_PER_VERTEX != 0) throw IllegalArgumentException("Draw order count is not divisible by coordsPerVertex (${COORDS_PER_VERTEX})")
     }
 
@@ -79,7 +82,6 @@ open class Mesh(
         shader.loadTextures()
     }
 
-    private val vertexCount: Int = vertexCoords.size / COORDS_PER_VERTEX
     private val vertexStride: Int = COORDS_PER_VERTEX * 4 // 4 bytes per vertex
     fun draw(position: Vec3, rotation: Rotation) {
         shader.bindTextures()
@@ -89,11 +91,11 @@ open class Mesh(
             Matrix.setIdentityM(modelMatrix, 0)
             Matrix.translateM(modelMatrix, 0, position.x, position.y, position.z)
             Matrix.rotateM(modelMatrix, 0, rotation.a, rotation.x, rotation.y, rotation.z)
-            glUniformMatrix4fv( glGetUniformLocation(shader.id, "mModel") , 1, false, modelMatrix, 0)
+            glUniformMatrix4fv(glGetUniformLocation(shader.id!!, "mModel"), 1, false, modelMatrix, 0)
         }
 
         // get handle to vertex shader's vPosition member. positionHandle is later used to disable its attribute array
-        val positionHandle = glGetAttribLocation(shader.id, "vPosition").also { handle ->
+        val positionHandle = glGetAttribLocation(shader.id!!, "vPosition").also { handle ->
             glEnableVertexAttribArray(handle)
             glVertexAttribPointer(
                 handle,
@@ -106,20 +108,22 @@ open class Mesh(
         }
 
         // get handle to vertex shader's vNormal member. normalHandle is later used to disable its attribute array
-        val normalHandle = glGetAttribLocation(shader.id, "vNormal").also { handle ->
-            glEnableVertexAttribArray(handle)       // Enable a handle to the data
-            glVertexAttribPointer(              // Prepare the normal data
-                handle,
-                3,
-                GL_FLOAT,
-                false,
-                vertexStride,
-                normalBuffer
-            )
-        }
+        val normalHandle = if (normalBuffer != null) {
+            glGetAttribLocation(shader.id!!, "vNormal").also { handle ->
+                glEnableVertexAttribArray(handle)       // Enable a handle to the data
+                glVertexAttribPointer(              // Prepare the normal data
+                    handle,
+                    3,
+                    GL_FLOAT,
+                    false,
+                    vertexStride,
+                    normalBuffer
+                )
+            }
+        } else null
 
         // get handle to vertex shader's vTexCoord member. texCoordsHandle is later used to disable its attribute array
-        val texCoordsHandle = glGetAttribLocation(shader.id, "vTexCoord").also { handle ->
+        val texCoordsHandle = glGetAttribLocation(shader.id!!, "vTexCoord").also { handle ->
 
             // Enable a handle to the triangle vertices
             glEnableVertexAttribArray(handle)
@@ -140,12 +144,11 @@ open class Mesh(
 
         // Disable vertex array
         glDisableVertexAttribArray(positionHandle)
-        glDisableVertexAttribArray(normalHandle)
+        if (normalHandle != null) glDisableVertexAttribArray(normalHandle)
         glDisableVertexAttribArray(texCoordsHandle)
     }
 
     companion object {
-        private val TAG = "hengine.Mesh.kt"
         private const val COORDS_PER_VERTEX = 3
     }
 }

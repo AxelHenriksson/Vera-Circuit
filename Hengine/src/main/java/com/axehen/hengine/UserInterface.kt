@@ -3,13 +3,12 @@ package com.axehen.hengine
 import android.util.Log
 import android.view.MotionEvent
 
-class UserInterface(var screenDimensions: Vec2, var screenResolution: Vec2): Drawable{
+class UserInterface(private val game: AbstractGame): Drawable{
 
     val elements = ArrayList<UIRectangle>()
     val buttons = ArrayList<UIRectangle.UIButton>()
 
     var scale = 1f
-
 
     override fun load() {
         elements.forEach { it.load() }
@@ -17,8 +16,8 @@ class UserInterface(var screenDimensions: Vec2, var screenResolution: Vec2): Dra
     }
 
     override fun draw() {
-        elements.forEach { it.draw(screenDimensions / scale) }
-        buttons.forEach { it.draw(screenDimensions / scale) }
+        elements.forEach { it.draw(game.width / scale, game.height / scale) }
+        buttons.forEach { it.draw(game.width / scale, game.height / scale) }
     }
 
 
@@ -26,26 +25,21 @@ class UserInterface(var screenDimensions: Vec2, var screenResolution: Vec2): Dra
      * @return The button that was touched, if any was, otherwise null
      */
     fun getTouched(event: MotionEvent): Boolean {
-        val xInches = event.x*screenDimensions.x/screenResolution.x
-        val yInches = screenDimensions.y*(1 - event.y/screenResolution.y)
         //Log.d(TAG, "UserInterface touchEvent() called with xInches=$xInches, yInches=$yInches")
-
-        Log.d(TAG, "touched: xInches=$xInches, yInches=$yInches")
 
         for (button in buttons) {
             //Log.d(TAG, "Button tested")
-            if (button.touch(Vec2(xInches, yInches), screenDimensions, scale, event)) {
+            if (button.touch(event, game.width, game.height, scale)) {
                 //Log.d(TAG, "button touched at xInches=$xInches, yInches=$yInches")
                     when(event.action) {
                         MotionEvent.ACTION_DOWN -> {
                             isHoldingButton = true
-                            button.isPressed = true
                         }
                         MotionEvent.ACTION_UP -> {
                             isHoldingButton = false
-                            button.isPressed = false
                         }
                     }
+                game.requestRender() // Request new render so that the button press is visible
                 return true
             }
         }

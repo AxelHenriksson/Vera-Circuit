@@ -16,63 +16,23 @@ import java.nio.IntBuffer
  * @param anchor        The UIRectangles anchor (TOP_LEFT, TOP_RIGHT, BOTTOM_LEFT, BOTTOM_RIGHT)
  */
 open class UIRectangle(var dimensions: Vec2, var margins: Vec2, var anchor: UIAnchor, protected val shader: Shader) {
-    interface UICollidable {
-        fun isWithin(buttonOrigin: Vec2, scale: Float, touchPos: Vec2): Boolean
-    }
-    class CircleUICollidable(private val radius: Float): UICollidable {
-        override fun isWithin(buttonOrigin: Vec2, scale: Float, touchPos: Vec2): Boolean = (buttonOrigin - touchPos).length() <= radius * scale
-    }
-    class UIButton(dimensions: Vec2, margins: Vec2, anchor: UIAnchor, shader: Shader, val collidable: UICollidable, val action: (pressed: Int) -> Unit): UIRectangle(dimensions, margins, anchor, shader) {
-        var isPressed = false
-
-        /**
-         * @param x X touch coordinate in inches
-         * @param y Y touch coordinate in inches
-         * @return true if the touch was on the element, false otherwise
-         */
-        fun touch(touchPos: Vec2, screenDimensions: Vec2, scale: Float, event: MotionEvent): Boolean {
-            Log.d("UIButton", "button.touch() called")
-            return if(collidable.isWithin(getOrigin(screenDimensions, scale), scale, touchPos)) {
-                when(event.action) {
-                    MotionEvent.ACTION_UP -> {
-                        Log.d(TAG, "isPressed set to false")
-                        isPressed = false
-                    }
-                    MotionEvent.ACTION_DOWN -> {
-
-                        Log.d(TAG, "isPressed set to true")
-                        isPressed = true
-                    }
-                }
-                action.invoke(event.action)
-                true
-            } else
-                false
-        }
-
-        override fun draw(screenDimensions: Vec2) {
-            GLES31.glUseProgram(shader.id)
-            GLES31.glUniform1i(GLES31.glGetUniformLocation(shader.id, "isPressed"), if(isPressed) 1 else 0)
-            super.draw(screenDimensions)
-        }
-    }
 
     /**
-     * @return the UIRectangles origin in inches
+     * @return the UIRectangles origin
      */
-    protected fun getOrigin(screenDimensions: Vec2, scale: Float): Vec2 {
+    protected fun getOrigin(screenWidth: Int, screenHeight: Int, scale: Float): Vec2 {
         val xOffset = (margins.x+dimensions.x/2) * scale
         val yOffset = (margins.y+dimensions.y/2) * scale
 
         return when (anchor) {
-            UIAnchor.TOP_LEFT       -> Vec2(                        xOffset,  screenDimensions.y - yOffset)
-            UIAnchor.TOP_RIGHT      -> Vec2(screenDimensions.x - xOffset,  screenDimensions.y - yOffset)
+            UIAnchor.TOP_LEFT       -> Vec2(                        xOffset,  screenHeight - yOffset)
+            UIAnchor.TOP_RIGHT      -> Vec2(screenWidth - xOffset,  screenHeight - yOffset)
             UIAnchor.BOTTOM_LEFT    -> Vec2(                        xOffset,                          yOffset)
-            UIAnchor.BOTTOM_RIGHT   -> Vec2(screenDimensions.x - xOffset,                          yOffset)
-            UIAnchor.TOP_MIDDLE     -> Vec2(screenDimensions.x/2f + margins.x * scale,screenDimensions.y - yOffset)
-            UIAnchor.BOTTOM_MIDDLE  -> Vec2(screenDimensions.x/2f + margins.x * scale,                        yOffset)
-            UIAnchor.LEFT_MIDDLE    -> Vec2(                        xOffset,             screenDimensions.y/2f + margins.y * scale)
-            UIAnchor.RIGHT_MIDDLE   -> Vec2(screenDimensions.x - xOffset,             screenDimensions.y/2f + margins.y * scale)
+            UIAnchor.BOTTOM_RIGHT   -> Vec2(screenWidth - xOffset,                          yOffset)
+            UIAnchor.TOP_MIDDLE     -> Vec2(screenWidth/2f + margins.x * scale,screenHeight - yOffset)
+            UIAnchor.BOTTOM_MIDDLE  -> Vec2(screenWidth/2f + margins.x * scale,                        yOffset)
+            UIAnchor.LEFT_MIDDLE    -> Vec2(                        xOffset,             screenHeight/2f + margins.y * scale)
+            UIAnchor.RIGHT_MIDDLE   -> Vec2(screenWidth - xOffset,             screenHeight/2f + margins.y * scale)
         }
     }
 
@@ -126,10 +86,8 @@ open class UIRectangle(var dimensions: Vec2, var margins: Vec2, var anchor: UIAn
 
     private val vertexStride: Int = COORDS_PER_VERTEX * 4 // 4 bytes per vertex
 
-    /**
-     * @param screenDimensions The screen dimensions in inches
-     */
-    open fun draw(screenDimensions: Vec2) {
+
+    open fun draw(width: Float, height: Float) {
         shader.bindTextures()
 
         // get handle to vertex shader's vPosition member. positionHandle is later used to disable its attribute array
@@ -148,10 +106,10 @@ open class UIRectangle(var dimensions: Vec2, var margins: Vec2, var anchor: UIAn
         // Create a matrix to scale and move UIRectangle
         FloatArray(16).let { matrix ->
             Matrix.setIdentityM(matrix, 0)
-            val xMargin = margins.x*2f/screenDimensions.x   // Margin (offset) in opengl coordinates (-1f to 1f)
-            val yMargin = margins.y*2f/screenDimensions.y
-            val xRadius = dimensions.x/screenDimensions.x   // Distance from center of UIRect to edge in opengl coordinates (-1f to 1f)
-            val yRadius = dimensions.y/screenDimensions.y
+            val xMargin = margins.x*2f/width   // Margin (offset) in opengl coordinates (-1f to 1f)
+            val yMargin = margins.y*2f/height
+            val xRadius = dimensions.x/width   // Distance from center of UIRect to edge in opengl coordinates (-1f to 1f)
+            val yRadius = dimensions.y/height
 
             when (anchor) {
                 UIAnchor.TOP_LEFT       -> Matrix.translateM(matrix, 0, -1f + xRadius + xMargin,  1f - yRadius - yMargin, 0f)
@@ -163,7 +121,7 @@ open class UIRectangle(var dimensions: Vec2, var margins: Vec2, var anchor: UIAn
                 UIAnchor.LEFT_MIDDLE    -> Matrix.translateM(matrix, 0,  -1f + xRadius + xMargin,    yMargin, 0f)
                 UIAnchor.RIGHT_MIDDLE   -> Matrix.translateM(matrix, 0,   1f - xRadius - xMargin,    yMargin, 0f)
             }
-            Matrix.scaleM(matrix, 0, dimensions.x/screenDimensions.x, dimensions.y/screenDimensions.y, 0f)
+            Matrix.scaleM(matrix, 0, dimensions.x/width, dimensions.y/height, 0f)
             GLES31.glUniformMatrix4fv(
                 GLES31.glGetUniformLocation(shader.id, "mTransform"),
                 1,
@@ -198,6 +156,44 @@ open class UIRectangle(var dimensions: Vec2, var margins: Vec2, var anchor: UIAn
             LEFT_MIDDLE,
             RIGHT_MIDDLE,
             BOTTOM_MIDDLE
+        }
+    }
+
+    interface UICollidable {
+        fun isWithin(buttonOrigin: Vec2, scale: Float, touchPos: Vec2): Boolean
+    }
+    class CircleUICollidable(private val radius: Float): UICollidable {
+        override fun isWithin(buttonOrigin: Vec2, scale: Float, touchPos: Vec2): Boolean = (buttonOrigin - touchPos).length() <= radius * scale
+    }
+    class UIButton(dimensions: Vec2, margins: Vec2, anchor: UIAnchor, shader: Shader, val collidable: UICollidable, val action: (pressed: Int) -> Unit): UIRectangle(dimensions, margins, anchor, shader) {
+        var isPressed = false
+
+        /**
+         * @return true if the touch was on the element, false otherwise
+         */
+        fun touch(event: MotionEvent, screenWidth: Int, screenHeight: Int, scale: Float): Boolean {
+            return if(collidable.isWithin(getOrigin(screenWidth, screenHeight, scale), scale, Vec2(event.x, screenHeight - event.y))) {
+                when(event.action) {
+                    MotionEvent.ACTION_UP -> {
+                        Log.d("UIButton", "isPressed set to false")
+                        isPressed = false
+                    }
+                    MotionEvent.ACTION_DOWN -> {
+
+                        Log.d("UIButton", "isPressed set to true")
+                        isPressed = true
+                    }
+                }
+                action.invoke(event.action)
+                true
+            } else
+                false
+        }
+
+        override fun draw(width: Float, height: Float) {
+            GLES31.glUseProgram(shader.id)
+            GLES31.glUniform1i(GLES31.glGetUniformLocation(shader.id, "isPressed"), if(isPressed) 1 else 0)
+            super.draw(width, height)
         }
     }
 }

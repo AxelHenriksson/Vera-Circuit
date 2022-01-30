@@ -5,13 +5,13 @@ import android.opengl.GLES31.*
 import android.util.Log
 
 
-class Shader(private val renderer: GameRenderer, val shaderAsset: String, val cubeMap: Cubemap?, var textures: Array<Texture>?) {
+class Shader(private val renderer: GameRenderer, val asset: String, private val cubeMap: CubeMap?, private var textures: Array<Texture>?) {
     val id: Int by lazy { renderer.loadShader(this) }
 
     constructor(renderer: GameRenderer, shaderAsset: String, textures: Array<Texture>) : this(renderer, shaderAsset, null, textures)
+    constructor(renderer: GameRenderer, shaderAsset: String) : this(renderer, shaderAsset, null, null)
 
     fun loadTextures() {
-
         if (textures != null) {
 
             for (i in textures!!.indices) {
@@ -61,7 +61,23 @@ class Shader(private val renderer: GameRenderer, val shaderAsset: String, val cu
 
 
     override fun hashCode(): Int =
-        shaderAsset.hashCode() + (cubeMap?.hashCode() ?: 0) + (textures?.hashCode() ?: 0)
+        asset.hashCode() + (cubeMap?.hashCode() ?: 0) + (textures?.hashCode() ?: 0)
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as Shader
+
+        if (asset != other.asset) return false
+        if (cubeMap != other.cubeMap) return false
+        if (textures != null) {
+            if (other.textures == null) return false
+            if (!textures.contentEquals(other.textures)) return false
+        } else if (other.textures != null) return false
+
+        return true
+    }
 
     companion object {
         private const val TAG = "Shader.kt"
@@ -79,7 +95,7 @@ class Shader(private val renderer: GameRenderer, val shaderAsset: String, val cu
             glShaderSource(shader, shaderCode)
             glCompileShader(shader)
 
-            Log.d(TAG, "loadShader on $shaderCode returns $shader with infolog: ${glGetShaderInfoLog(shader)}")
+            Log.d(TAG, "loadShader on \n$shaderCode\n returns shaderID: $shader ${glGetShaderInfoLog(shader).let {if (it.isNotEmpty()) "with infolog: $it" else ""}}")
             return shader
         }
 
@@ -91,6 +107,29 @@ class Shader(private val renderer: GameRenderer, val shaderAsset: String, val cu
          * @return              The compiled shader's id
          */
         fun loadShaderFromAsset(context: Context, type: Int, asset: String): Int = loadShader(type, Utils.getStringFromAsset(context, asset))
+
+        fun checkCompileErrors(shaderId: Int, type: Int) {
+            val compileStatus = IntArray(1)
+            glGetShaderiv(shaderId, GL_COMPILE_STATUS, compileStatus, 0)
+            if (compileStatus[0] != GL_TRUE) {
+                glDeleteShader(shaderId)
+                throw RuntimeException(
+                    "Could not compile ${if(type == GL_VERTEX_SHADER) "vertex shader" else if(type == GL_FRAGMENT_SHADER) "fragment shader" else "shader"}: "
+                            + glGetShaderInfoLog(shaderId)
+                )
+            }
+        }
+        fun checkLinkErrors(programId: Int) {
+            val linkStatus = IntArray(1)
+            glGetProgramiv(programId, GL_LINK_STATUS, linkStatus, 0)
+            if (linkStatus[0] != GL_TRUE) {
+                glDeleteProgram(programId)
+                throw RuntimeException(
+                    "Could not link program: "
+                            + glGetProgramInfoLog(programId)
+                )
+            }
+        }
     }
 
 }

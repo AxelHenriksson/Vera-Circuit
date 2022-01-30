@@ -1,88 +1,76 @@
 package com.axehen.hengine
 
 import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.ColorSpace
 import android.opengl.GLES31.*
-import javax.microedition.khronos.egl.EGLConfig
-import javax.microedition.khronos.opengles.GL10
-
 import android.opengl.GLSurfaceView
 import android.opengl.Matrix
 import android.util.Log
-import java.lang.RuntimeException
-import java.nio.ByteBuffer
 import java.nio.FloatBuffer
-
 import java.util.*
-import kotlin.collections.HashMap
+import javax.microedition.khronos.egl.EGLConfig
+import javax.microedition.khronos.opengles.GL10
 
 
 class GameRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
-    var onDrawCallback: (() -> Unit)? = null
+    internal var userInterface: UserInterface? = null
+
+    /** List of new drawables yet to be loaded into the rendering pipeline **/
+    private val newDrawables: ArrayList<Drawable> = ArrayList()
+    /** List of drawables loaded into the rendering pipeline and being drawn **/
+    private val drawables: ArrayList<Drawable> = ArrayList()
+    /** Loads all drawables in [newDrawables] and moves them into  [drawables] **/
+    private fun loadNewDrawables() {
+        while (newDrawables.isNotEmpty()) {
+            val drawable = newDrawables.removeFirst()
+            drawable.load()
+            drawables.add(drawable)
+            Log.d("Drawables", "Drawable loaded, drawables.size=${drawables.size}, newDrawables.size=${newDrawables.size}")
+        }
+    }
 
     /** Adds a drawable into the renderer's pipeline **/
     fun add(drawable: Drawable) { newDrawables.add(drawable) }
     fun addAll(vararg drawables: Drawable) { newDrawables.addAll(drawables) }
     fun remove(drawable: Drawable) { toRemove.add(drawable) }   // We should probably do something before we remove it so as not to leak memory
-    val toRemove = HashSet<Drawable>()
+    private val toRemove = HashSet<Drawable>()
 
-    // List of new drawables not yet added into the rendering pipeline
-    private val newDrawables: ArrayList<Drawable> = ArrayList()
-    // List of drawables in the rendering pipeline
-    private val drawables: ArrayList<Drawable> = ArrayList()
+    /** Set of loaded shader IDs **/
+    private val shaders = HashMap<Shader, Int>()
 
-    var userInterface: UserInterface? = null
 
-    // Singleton rendering object functions
-    /**
-     * Loads a Shader object into GLES memory and returns its ID
-     */
-    fun loadShader(shader: Shader): Int {
-        return if (shaders.containsKey(shader)) shaders[shader]!!
-        else glCreateProgram().also { id ->
+    /** Loads a Shader object into GLES memory and returns its ID **/
+    internal fun loadShader(shader: Shader): Int {
+        if(shaders.containsKey(shader)) return shaders[shader]!!
 
-            val vertexShader: Int = Shader.loadShaderFromAsset(context, GL_VERTEX_SHADER, shader.shaderAsset + ".vert")
-            checkCompileErrors(vertexShader, GL_VERTEX_SHADER)
+        val id = glCreateProgram()
+        val vertexShader: Int = Shader.loadShaderFromAsset(context, GL_VERTEX_SHADER, shader.asset + ".vert")
+        Shader.checkCompileErrors(vertexShader, GL_VERTEX_SHADER)
 
-            val fragmentShader: Int = Shader.loadShaderFromAsset(context, GL_FRAGMENT_SHADER, shader.shaderAsset + ".frag")
-            checkCompileErrors(fragmentShader, GL_FRAGMENT_SHADER)
+        val fragmentShader: Int = Shader.loadShaderFromAsset(context, GL_FRAGMENT_SHADER, shader.asset + ".frag")
+        Shader.checkCompileErrors(fragmentShader, GL_FRAGMENT_SHADER)
 
-            glAttachShader(id, vertexShader)
-            glAttachShader(id, fragmentShader)
+        glAttachShader(id, vertexShader)
+        glAttachShader(id, fragmentShader)
 
-            glLinkProgram(id)
-            checkLinkErrors(id)
+        glLinkProgram(id)
+        Shader.checkLinkErrors(id)
 
-            shaders[shader] = id
-        }
+        shaders[shader] = id
+        return id
     }
-    private val shaders: HashMap<Shader, Int> = HashMap()
-
 
     /** Updates view matrix and camPos uniforms in shaders from applicable instance variables */
     fun updateView() {
         val eyePos = lookFrom + lookAt
         // Calculate new viewMatrix
         Matrix.setLookAtM(viewMatrix, 0, eyePos.x, eyePos.y, eyePos.z, lookAt.x, lookAt.y, lookAt.z, 0f, 0f, 1f)
-
-        // Enter eyePos into GLES:able buffer
-        camPosBuffer.let { buffer ->
-            buffer.put(floatArrayOf(eyePos.x, eyePos.y, eyePos.z))
-            buffer.position(0)
-        }
     }
     private val viewMatrix = FloatArray(16)
     @Volatile   //TODO: Check if Volatile is necessary
-    var lookFrom = Vec3(0f, 0f, 1f)
+    var lookFrom = Vec3(0f, 0f, 1f) @Synchronized get @Synchronized set
     @Volatile   //TODO: Check if Volatile is necessary
-    var lookAt: Vec3 = Vec3(0f, 0f, 0f)
-    private val camPosBuffer: FloatBuffer = FloatBuffer.allocate(3).also { buffer ->
-        buffer.put(floatArrayOf(lookFrom.x + lookAt.x, lookFrom.y + lookAt.y, lookFrom.z + lookAt.z))
-        buffer.position(0)
-    }
+    var lookAt: Vec3 = Vec3(0f, 0f, 0f) @Synchronized get @Synchronized set
 
     private fun updateProjectionMatrix(width: Int, height: Int) {
         val ratio = width.toFloat() / height.toFloat()
@@ -107,31 +95,32 @@ class GameRenderer(private val context: Context) : GLSurfaceView.Renderer {
         glDepthMask( true )
 
         userInterface?.load()
-
-        //drawables.forEach { it.load() }  There are no longer any drawables in 'drawables' on surface creation, only in 'newMeshes'
     }
 
     override fun onDrawFrame(unused: GL10) {
-        while (newDrawables.isNotEmpty()) {
-            val drawable = newDrawables.removeFirst()
-            drawable.load()
-            drawables.add(drawable)
-        }
+
         drawables.removeAll(toRemove)
         toRemove.clear()
+        loadNewDrawables()
+
 
         // Redraw background color
         glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT)
 
+        val viewMatrix = this.viewMatrix.copyOf()
+        val projectionMatrix = this.projectionMatrix.copyOf()
+        val camPosBuffer = FloatBuffer.allocate(3).also {
+            it.put(floatArrayOf(lookFrom.x + lookAt.x, lookFrom.y + lookAt.y, lookFrom.z + lookAt.z))
+            it.position(0)
+        }
+
         // TODO: See if it is possible to move uniform passing to a more seldom executed method
-        shaders.values.forEach { id ->
+        for(id in shaders.values) {
             glUseProgram(id)
             glUniform3fv(glGetUniformLocation(id, "vCamPos"), 1, camPosBuffer)
             glUniformMatrix4fv(glGetUniformLocation(id, "mProjection"), 1, false, projectionMatrix, 0)
             glUniformMatrix4fv(glGetUniformLocation(id, "mView"), 1, false, viewMatrix, 0)
         }
-
-        onDrawCallback?.invoke()
 
         drawables.forEach {it.draw()}
 
@@ -148,39 +137,7 @@ class GameRenderer(private val context: Context) : GLSurfaceView.Renderer {
     override fun onSurfaceChanged(unused: GL10, width: Int, height: Int) {
         glViewport(0, 0, width, height)
 
-        //userInterface?.screenDimensions = Vec2(width/context.resources.displayMetrics.xdpi, height/context.resources.displayMetrics.ydpi)
-        userInterface?.screenDimensions = Vec2(context.resources.displayMetrics.widthPixels.toFloat()/context.resources.displayMetrics.densityDpi, context.resources.displayMetrics.heightPixels.toFloat()/context.resources.displayMetrics.densityDpi)
-        userInterface?.screenResolution = Vec2(context.resources.displayMetrics.widthPixels.toFloat(), context.resources.displayMetrics.heightPixels.toFloat())
-
         updateProjectionMatrix(width, height)
-    }
-
-
-    companion object {
-        private const val TAG = "GameRenderer"
-
-        private fun checkCompileErrors(id: Int, type: Int) {
-            val compileStatus = IntArray(1)
-            glGetShaderiv(id, GL_COMPILE_STATUS, compileStatus, 0)
-            if (compileStatus[0] != GL_TRUE) {
-                glDeleteShader(id)
-                throw RuntimeException(
-                    "Could not compile ${if(type == GL_VERTEX_SHADER) "vertex shader" else if(type == GL_FRAGMENT_SHADER) "fragment shader" else "shader"}: "
-                            + glGetShaderInfoLog(id)
-                )
-            }
-        }
-        private fun checkLinkErrors(id: Int) {
-            val linkStatus = IntArray(1)
-            glGetProgramiv(id, GL_LINK_STATUS, linkStatus, 0)
-            if (linkStatus[0] != GL_TRUE) {
-                glDeleteProgram(id)
-                throw RuntimeException(
-                    "Could not link program: "
-                            + glGetProgramInfoLog(id)
-                )
-            }
-        }
     }
 
 }

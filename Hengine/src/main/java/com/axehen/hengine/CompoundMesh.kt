@@ -1,12 +1,29 @@
 package com.axehen.hengine
 
-open class CompoundMesh(var position: Vec3, var rotation: Rotation, val meshes: List<Mesh>) : Drawable {
+open class CompoundMesh(private val meshes: List<Mesh>) {
 
-    override fun load() {
+    fun load() {
         meshes.forEach{ it.load() }
     }
-    override fun draw() {
+    fun draw(position: Vec3, rotation: Rotation) {
         meshes.forEach{ it.draw(position, rotation) }
+    }
+}
+
+open class StaticMesh(protected val position: Vec3, protected val rotation: Rotation, meshes: List<Mesh>) : CompoundMesh(meshes), Drawable {
+    override fun draw() {
+        super.draw(position, rotation)
+    }
+}
+
+// TODO: Implement thread safety, Volatile and Synchronized have been removed for testing purposes
+open class DynamicMesh(position: Vec3, rotation: Rotation, meshes: List<Mesh>) : CompoundMesh(meshes), Drawable {
+    var position = position //@Synchronized get @Synchronized set
+    var rotation = rotation //@Synchronized get @Synchronized set
+
+
+    override fun draw() {
+        super.draw(position, rotation)
     }
 
 }
