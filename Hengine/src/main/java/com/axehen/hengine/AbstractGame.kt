@@ -22,11 +22,6 @@ abstract class AbstractGame(context: Context, attr: AttributeSet) : GLSurfaceVie
         glDepthFunc( GL_LEQUAL )
         glDepthMask( true )
 
-//        Log.d("DENSITY", context.resources.displayMetrics.density.toString())
-//        Log.d("DENSITY", context.resources.displayMetrics.xdpi.toString())
-//        Log.d("DENSITY", context.resources.displayMetrics.ydpi.toString())
-//        Log.d("DENSITY", context.resources.displayMetrics.densityDpi.toString())
-
         renderer = GameRenderer(context)
 
         // Set the Renderer for drawing on the GLSurfaceView
@@ -35,6 +30,22 @@ abstract class AbstractGame(context: Context, attr: AttributeSet) : GLSurfaceVie
         // Render the view only when there is a change in the drawing data
         renderMode = RENDERMODE_WHEN_DIRTY  // TODO: Turn this back to RENDERMODE_WHEN_DIRTY
 
+        Thread {
+            renderer.userInterface = initUI()
+        }.start()
+
+        Thread {
+            renderer.addAll(initLevel())
+        }.start()
+
+    }
+
+    protected open fun initUI(): UserInterface {
+        return UserInterface(this)
+    }
+
+    protected open fun initLevel(): List<Drawable> {
+        return arrayListOf()
     }
 
     // Game Loop
@@ -72,10 +83,6 @@ abstract class AbstractGame(context: Context, attr: AttributeSet) : GLSurfaceVie
 
     protected fun add(drawable: Drawable) {
         renderer.add(drawable)
-    }
-
-    protected fun setUserInterface(userInterface: UserInterface) {
-        renderer.userInterface = userInterface
     }
 
 }

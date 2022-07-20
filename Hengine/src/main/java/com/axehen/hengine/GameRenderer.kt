@@ -32,6 +32,7 @@ class GameRenderer(private val context: Context) : GLSurfaceView.Renderer {
     /** Adds a drawable into the renderer's pipeline **/
     fun add(drawable: Drawable) { newDrawables.add(drawable) }
     fun addAll(vararg drawables: Drawable) { newDrawables.addAll(drawables) }
+    fun addAll(drawables: List<Drawable>) { newDrawables.addAll(drawables) }
     fun remove(drawable: Drawable) { toRemove.add(drawable) }   // We should probably do something before we remove it so as not to leak memory
     private val toRemove = HashSet<Drawable>()
 
@@ -67,14 +68,15 @@ class GameRenderer(private val context: Context) : GLSurfaceView.Renderer {
         Matrix.setLookAtM(viewMatrix, 0, eyePos.x, eyePos.y, eyePos.z, lookAt.x, lookAt.y, lookAt.z, 0f, 0f, 1f)
     }
     private val viewMatrix = FloatArray(16)
-    @Volatile   //TODO: Check if Volatile is necessary
-    var lookFrom = Vec3(0f, 0f, 1f) @Synchronized get @Synchronized set
-    @Volatile   //TODO: Check if Volatile is necessary
-    var lookAt: Vec3 = Vec3(0f, 0f, 0f) @Synchronized get @Synchronized set
+    //@Volatile   //TODO: Check if Volatile is necessary
+    var lookFrom = Vec3(0f, 0f, 1f) //@Synchronized get @Synchronized set
+    //@Volatile   //TODO: Check if Volatile is necessary
+    var lookAt: Vec3 = Vec3(0f, 0f, 0f) //@Synchronized get @Synchronized set
 
     private fun updateProjectionMatrix(width: Int, height: Int) {
         val ratio = width.toFloat() / height.toFloat()
-        Matrix.frustumM(projectionMatrix, 0, -ratio*zoom, ratio*zoom, -1f*zoom, 1f*zoom, 1f, 50f)
+        val clipDistanceFactor = 10f    // TODO: Make this adjustable by implementation
+        Matrix.frustumM(projectionMatrix, 0, -ratio*zoom*clipDistanceFactor/2, ratio*zoom*clipDistanceFactor/2, -1f*zoom*clipDistanceFactor/2, 1f*zoom*clipDistanceFactor/2, 0.1f*clipDistanceFactor, 50f*clipDistanceFactor)
         // Matrix.orthoM(projectionMatrix, 0, -ratio, ratio, -1f, 1f, 0.1f, 10f) // Orthographic projection matrix
     }
     private val projectionMatrix = FloatArray(16)

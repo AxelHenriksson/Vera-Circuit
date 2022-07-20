@@ -1,5 +1,7 @@
 package com.axehen.hengine
 
+import kotlin.math.cos
+import kotlin.math.sin
 import kotlin.math.sqrt
 
 
@@ -34,11 +36,11 @@ data class Vec2(var x: Float, var y: Float) {
         return if((this dot prohibitor) < 0)  this - prohibitor * (this dot (prohibitor.normalize()))
         else this
     }
-    operator fun div(other: Float)      = Vec2(x/other, y/other)
-    operator fun times(other: Float)    = Vec2(x*other, y*other)
-    operator fun plus(other: Vec2)      = Vec2(x + other.x, y + other.y)
-    operator fun minus(other: Vec2)     = Vec2(x-other.x, y-other.y)
-    operator fun unaryMinus()           = Vec2(-x, -y)
-    infix fun dot(other: Vec2)          = x*other.x + y*other.y
+    operator fun div(other: Float)          = Vec2(x/other, y/other)
+    operator fun times(other: Float)        = Vec2(x*other, y*other)
+    operator fun plus(other: Vec2)          = Vec2(x + other.x, y + other.y)
+    operator fun minus(other: Vec2)         = Vec2(x-other.x, y-other.y)
+    operator fun unaryMinus()               = Vec2(-x, -y)
+    infix fun dot(other: Vec2)              = x*other.x + y*other.y
 }
 data class Rotation(var a: Float, var x: Float, var y: Float, var z: Float)

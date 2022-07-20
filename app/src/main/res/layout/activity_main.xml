@@ -3,10 +3,10 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main_frame"
-    android:name="com.axehen.boscage.SplashFragment"
+    android:name="se.chalmersverateam.circuit.SplashFragment"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="?attr/fullscreenBackgroundColor"
-    android:theme="@style/ThemeOverlay.Boscage.FullscreenContainer"
+    android:theme="@style/ThemeOverlay.VeraCircuit.FullscreenContainer"
     tools:context=".MainActivity" >
 </androidx.fragment.app.FragmentContainerView>

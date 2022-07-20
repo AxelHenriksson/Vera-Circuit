@@ -79,7 +79,7 @@ open class Mesh(
 
 
     fun load() {
-        shader.loadTextures()
+        shader.load()
     }
 
     private val vertexStride: Int = COORDS_PER_VERTEX * 4 // 4 bytes per vertex

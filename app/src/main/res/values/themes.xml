@@ -1,6 +1,6 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
-    <style name="Theme.Boscage" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+    <style name="Theme.VeraCircuit" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <!-- Enable rendering under cutout -->
         <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
         <!-- Primary brand color. -->
@@ -16,14 +16,14 @@
         <!-- Customize your theme here. -->
     </style>
 
-    <style name="ThemeOverlay.Boscage.FullscreenContainer" parent="">
+    <style name="ThemeOverlay.VeraCircuit.FullscreenContainer" parent="">
         <item name="android:screenOrientation">landscape</item>
         <item name="fullscreenBackgroundColor">@color/light_blue_600</item>
         <item name="fullscreenTextColor">@color/light_blue_A200</item>
     </style>
 
-    <style name="Theme.Boscage.Fullscreen" parent="Theme.Boscage">
-        <item name="android:actionBarStyle">@style/Widget.Theme.Boscage.ActionBar.Fullscreen</item>
+    <style name="Theme.VeraCircuit.Fullscreen" parent="Theme.VeraCircuit">
+        <item name="android:actionBarStyle">@style/Widget.Theme.VeraCircuit.ActionBar.Fullscreen</item>
         <item name="android:windowActionBarOverlay">true</item>
         <item name="android:windowBackground">@null</item>
     </style>

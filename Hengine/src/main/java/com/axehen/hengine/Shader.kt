@@ -3,65 +3,64 @@ package com.axehen.hengine
 import android.content.Context
 import android.opengl.GLES31.*
 import android.util.Log
+import com.axehen.hengine.Utils.Companion.contentEquals
 
-
-class Shader(private val renderer: GameRenderer, val asset: String, private val cubeMap: CubeMap?, private var textures: Array<Texture>?) {
+open class Shader(private val renderer: GameRenderer, val asset: String, protected val textures: List<AbstractTexture>) {
     val id: Int by lazy { renderer.loadShader(this) }
 
-    constructor(renderer: GameRenderer, shaderAsset: String, textures: Array<Texture>) : this(renderer, shaderAsset, null, textures)
-    constructor(renderer: GameRenderer, shaderAsset: String) : this(renderer, shaderAsset, null, null)
+    open fun load() {
 
-    fun loadTextures() {
-        if (textures != null) {
 
-            for (i in textures!!.indices) {
+        // Load textures
+        glUseProgram(id)
 
+        var slot = 0
+        textures.forEach { texture ->
+
+            if (texture is AbstractTexture.Texture) {
                 //if (textures!![i].id != -1) continue
+                texture.load(GL_TEXTURE0 + slot)
 
-                textures!![i].load(GL_TEXTURE0 + i)
-
-                glBindTexture(GL_TEXTURE_2D, i)
+                glBindTexture(GL_TEXTURE_2D, slot)
 
                 // Insert texture into shader
-                val textureUniformLocation = glGetUniformLocation(id, textures!![i].uniform)
+                val textureUniformLocation = glGetUniformLocation(id, texture.uniform)
 
-                glUseProgram(id)
+                glUniform1i(textureUniformLocation, slot)
 
-                glUniform1i(textureUniformLocation, i)
+                slot++
+            } else if (texture is AbstractTexture.CubeMap) {
+                //if (cubeMap.ID != -1) //TODO: Do something if the texture already exists
+
+                texture.load()
+
+                glBindTexture(GL_TEXTURE_CUBE_MAP, texture.id)
+
+                val cubemapUniformLocation = glGetUniformLocation(id, texture.uniform)
+
+                glUniform1i(cubemapUniformLocation, 0)
             }
-        }
-
-        if (cubeMap != null) {
-            //if (cubeMap.ID != -1) //TODO: Do something if the texture already exists
-
-            cubeMap.load()
-
-            glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap.id)
-
-            val cubeMapUniformLocation = glGetUniformLocation(id, "cubeMap")
-
-            glUseProgram(id)
-
-            glUniform1i(cubeMapUniformLocation, 0)
-
         }
     }
 
-    fun bindTextures() {
+    open fun bindTextures() {
         glUseProgram(id)
 
-        if (textures != null)
-            for (i in textures!!.indices) {
-                glActiveTexture(GL_TEXTURE0 + i)
-                glBindTexture(GL_TEXTURE_2D, textures!![i].id)
+        var slot = 0
+        textures.forEach { texture ->
+            if (texture is AbstractTexture.Texture) {
+                glActiveTexture(GL_TEXTURE0 + slot)
+                glBindTexture(GL_TEXTURE_2D, texture.id)
+                slot++
+            } else if (texture is AbstractTexture.CubeMap) {
+                glBindTexture(GL_TEXTURE_CUBE_MAP, texture.id)
             }
-
-        if (cubeMap != null) glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap.id)
+        }
     }
 
 
     override fun hashCode(): Int =
-        asset.hashCode() + (cubeMap?.hashCode() ?: 0) + (textures?.hashCode() ?: 0)
+        asset.hashCode() + textures.hashCode()
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -70,11 +69,7 @@ class Shader(private val renderer: GameRenderer, val asset: String, private val 
         other as Shader
 
         if (asset != other.asset) return false
-        if (cubeMap != other.cubeMap) return false
-        if (textures != null) {
-            if (other.textures == null) return false
-            if (!textures.contentEquals(other.textures)) return false
-        } else if (other.textures != null) return false
+        if (!(textures contentEquals other.textures)) return false
 
         return true
     }
@@ -129,6 +124,57 @@ class Shader(private val renderer: GameRenderer, val asset: String, private val 
                             + glGetProgramInfoLog(programId)
                 )
             }
+        }
+    }
+
+    data class UniformColor(val uniform: String, val r: Float, val g: Float, val b: Float, val a: Float)
+
+    class MTLShader(renderer: GameRenderer, context: Context, private val colors: List<UniformColor>, textures: List<AbstractTexture?>): Shader(renderer, "shaders/mtl", textures.filterNotNull()) {
+        private val missingMaps = mutableSetOf("map_Kd")
+        private val whiteTexture = AbstractTexture.Texture(Utils.getBitmap(context, "textures/white.png"), "")
+
+        override fun load() {
+
+            // Load all supplied textures
+            super.load()
+
+            // Get a HashSet of all map uniforms not supplied with a texture from [textures], these are to be supplied with a white texture
+            textures.forEach { texture ->
+                if (texture is AbstractTexture.Texture) {
+                    missingMaps.remove(texture.uniform)
+                }
+            }
+
+            // Create the white texture
+            whiteTexture.load(GL_TEXTURE0 + textures.size)  // When super.load() has loaded all textures in textures, load this one after them.
+
+            glBindTexture(GL_TEXTURE_2D, textures.size)
+
+            // Insert texture into all non-supplied uniforms
+            for (uniform in missingMaps) {
+                glUniform1i(glGetUniformLocation(id, uniform), textures.size)
+            }
+
+            glUseProgram(id)
+
+            // Insert color into shader
+            for (color in colors) {
+                glUniform4f(glGetUniformLocation(id, color.uniform), color.r, color.g, color.b, color.a)
+            }
+        }
+
+        override fun bindTextures() {
+            super.bindTextures()
+
+            // Bind white texture to all non-supplied uniforms
+            for (uniform in missingMaps) {
+                glActiveTexture(GL_TEXTURE0 + textures.size)
+                glBindTexture(GL_TEXTURE_2D, whiteTexture.id)
+            }
+        }
+
+        override fun toString(): String {
+            return "MTLShader(asset=${asset}, textures=$textures, colors=$colors)"
         }
     }
 

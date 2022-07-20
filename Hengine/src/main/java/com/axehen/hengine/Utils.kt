@@ -56,12 +56,28 @@ class Utils {
             //val opts = BitmapFactory.Options()
             //opts.inScaled = false
             //opts.inPreferredColorSpace = ColorSpace.get(ColorSpace.Named.SRGB)
-            return BitmapFactory.decodeStream(context.assets.open(asset) ).flip(1f, -1f).also {
-                Log.d("Bitmaps", "bitmap got with colorSpace: ${it.colorSpace}, width: ${it.width}, height: ${it.height}, allocationByteCount: ${it.allocationByteCount}, byteCount: ${it.byteCount}")
+            return try {
+                BitmapFactory.decodeStream(context.assets.open(asset)).flip(1f, -1f).also {
+                    Log.d(
+                        "Bitmaps",
+                        "bitmap got with colorSpace: ${it.colorSpace}, width: ${it.width}, height: ${it.height}, allocationByteCount: ${it.allocationByteCount}, byteCount: ${it.byteCount}"
+                    )
+                }
+            } catch (e: FileNotFoundException) {
+                Log.e("Bitmaps", "File not found: $asset")
+                BitmapFactory.decodeStream(context.assets.open("textures/checkered.png")).flip(1f, -1f)
             }
         }
         private fun Bitmap.flip(x: Float, y: Float): Bitmap {
             return Bitmap.createBitmap(this, 0, 0, width, height, android.graphics.Matrix().also { it.preScale(x, y) }, true)
+        }
+
+        infix fun<T> List<T>.contentEquals(other: List<T>): Boolean {
+            if (size != other.size) return false
+            for (i in 0 until size) {
+                if (this[i] != other[i]) return false
+            }
+            return true
         }
 
     }

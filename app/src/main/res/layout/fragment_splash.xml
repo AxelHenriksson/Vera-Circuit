@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="?attr/fullscreenBackgroundColor"
-    android:theme="@style/ThemeOverlay.Boscage.FullscreenContainer"
+    android:theme="@style/ThemeOverlay.VeraCircuit.FullscreenContainer"
     tools:context=".SplashFragment">
 
     <!-- The primary full-screen view. This can be replaced with whatever view

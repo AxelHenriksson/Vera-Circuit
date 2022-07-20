@@ -80,7 +80,7 @@ open class UIRectangle(var dimensions: Vec2, var margins: Vec2, var anchor: UIAn
 
 
     fun load() {
-        shader.loadTextures()
+        shader.load()
     }
 
 

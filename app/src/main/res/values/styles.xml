@@ -1,11 +1,11 @@
 <resources>
 
-    <style name="Widget.Theme.Boscage.ButtonBar.Fullscreen" parent="">
+    <style name="Widget.Theme.VeraCircuit.ButtonBar.Fullscreen" parent="">
         <item name="android:background">@color/black_overlay</item>
         <item name="android:buttonBarStyle">?android:attr/buttonBarStyle</item>
     </style>
 
-    <style name="Widget.Theme.Boscage.ActionBar.Fullscreen" parent="Widget.AppCompat.ActionBar">
+    <style name="Widget.Theme.VeraCircuit.ActionBar.Fullscreen" parent="Widget.AppCompat.ActionBar">
         <item name="android:background">@color/black_overlay</item>
     </style>
 </resources>

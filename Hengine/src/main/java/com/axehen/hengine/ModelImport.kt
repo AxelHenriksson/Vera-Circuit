@@ -1,7 +1,7 @@
 package com.axehen.hengine
 
-import android.util.Log
-import java.util.ArrayList
+//import android.util.Log
+import java.util.*
 
 class ModelImport {
 
@@ -9,12 +9,11 @@ class ModelImport {
 
         private data class Vertex(val pos: Vec3, val texCoord: Vec2, val normal: Vec3)
 
-        class NotFoundException(msg: String) : Exception(msg)
-
         fun AbstractGame.parseOBJMTL(asset: String): List<Mesh> {
             val objString = Utils.getStringFromAsset(context, "$asset.obj")
+            //Log.d("ModelImport", "objString from asset: $asset, with ${objString.lines().size} lines")
             val mtlString = Utils.getStringFromAsset(context, "$asset.mtl")
-            // Log.d("ModelImport", "parsing obj : \n $objString \n\n and mtl: \n $mtlString \n\n")
+            //Log.d("ModelImport", "mtlString from asset: $asset, with ${mtlString.lines().size} lines")
 
             // Split the obj file string into one string per object. Disregard the first element as that is above the first object declaration
             val oStrings = objString.split("\\no [^\\s]+".toRegex()).let {
@@ -86,39 +85,53 @@ class ModelImport {
                 }
                 meshList.add(createMesh(faceList, getShaderFromMTL(mtlString, activeMaterial)))
             }
-            return meshList
-            // Log.d(TAG, "${objString.lines().size} lines parsed in OBJ file, ${posList.size} positions added, ${texCoordList.size} texCoords added, ${normalList.size} normals added, ${faceList.size} faces added")
+            return meshList//.also {
+                //Log.d("ModelImport","${objString.lines().size} lines parsed in OBJ file \"$asset\", ${posList.size} positions added, ${texCoordList.size} texCoords added, ${normalList.size} normals added, ${faceList.size} faces added" )
+            //}
         }
 
-        private fun AbstractGame.getShaderFromMTL(mtlString: String, activeMaterial: String): Shader {
-            var mapKd = ""
+        private fun AbstractGame.getShaderFromMTL(
+            mtlString: String,
+            activeMaterial: String
+        ): Shader {
+            val lines = mtlString.lines()
 
-            var inMaterial = false
-            for (line in mtlString.lines()) {
-                val words = line.split(" ")
+            var mapKd: String? = null
+            var kd: Shader.UniformColor? = null
+
+            var i = lines.indexOf("newmtl $activeMaterial")+1
+            while(i < lines.size && !(lines[i].startsWith("newmtl"))) {
+
+                val words = lines[i].split("\\s+".toRegex()).toTypedArray()
                 when (words[0]) {
-                    "newmtl" -> inMaterial = words[1] == activeMaterial
                     "map_Kd" -> {
-                        if (inMaterial) {
-                            mapKd = words[1]
-                            break
-                        }
+                        mapKd = words[1]
+                        //Log.d("ModelImport", "map_Kd: $mapKd")
                     }
+                    "Kd" -> { kd = Shader.UniformColor("Kd", words[1].toFloat(), words[2].toFloat(), words[3].toFloat(), 1f)
+                        //Log.d("ModelImport", "Kd: $kd")
+                    }
+                    else -> {}
                 }
+
+                i++
             }
 
-            if (mapKd == "") throw NotFoundException("Either the material $activeMaterial or the texture map_Kd was not found in mtl file")
-
-            return Shader(
+            return Shader.MTLShader(
                 renderer,
-                "shaders/mtl",
-                arrayOf(
-                    Texture(
+                context,
+                arrayListOf(
+                    kd ?: Shader.UniformColor("Kd", 0.5f, 0.5f, 0.5f, 1f),
+                ),
+                arrayListOf(
+                    mapKd?.let { AbstractTexture.Texture(
                         bitmap = Utils.getBitmap(context, mapKd),
-                        uniform = "texKd"
-                    )
+                        uniform = "map_Kd"
+                    ) }
                 )
-            )
+            )//.also{
+                //Log.d("ModelImport", "getShaderFromMTL returns: $it")
+            //}
         }
 
         fun AbstractGame.parseOBJ(asset: String, scale: Float, shader: Shader): Mesh {
@@ -169,7 +182,7 @@ class ModelImport {
             }
 
 
-            Log.d("ModelImport", "${objString.lines().size} lines parsed in OBJ file, ${posList.size} positions added, ${texCoordList.size} texCoords added, ${normalList.size} normals added, ${faceList.size} faces added")
+            //Log.d("ModelImport", "${objString.lines().size} lines parsed in OBJ file, ${posList.size} positions added, ${texCoordList.size} texCoords added, ${normalList.size} normals added, ${faceList.size} faces added")
 
             return createMesh(faceList, shader)
         }

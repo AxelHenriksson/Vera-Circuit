@@ -7,7 +7,7 @@ android {
     compileSdk 32
 
     defaultConfig {
-        applicationId "com.axehen.boscage"
+        applicationId "se.chalmersverateam.circuit"
         minSdk 28
         targetSdk 32
         versionCode 1
@@ -32,13 +32,14 @@ android {
     buildFeatures {
         viewBinding true
     }
+    namespace 'se.chalmersverateam.circuit'
 }
 
 dependencies {
 
     implementation 'androidx.core:core-ktx:1.7.0'
-    implementation 'androidx.appcompat:appcompat:1.4.0'
-    implementation 'com.google.android.material:material:1.4.0'
+    implementation 'androidx.appcompat:appcompat:1.4.1'
+    implementation 'com.google.android.material:material:1.6.0'
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     implementation project(path: ':Hengine')
     testImplementation 'junit:junit:4.13.2'

@@ -17,9 +17,9 @@ open class StaticMesh(protected val position: Vec3, protected val rotation: Rota
 }
 
 // TODO: Implement thread safety, Volatile and Synchronized have been removed for testing purposes
-open class DynamicMesh(position: Vec3, rotation: Rotation, meshes: List<Mesh>) : CompoundMesh(meshes), Drawable {
-    var position = position //@Synchronized get @Synchronized set
-    var rotation = rotation //@Synchronized get @Synchronized set
+open class DynamicMesh(//@Synchronized get @Synchronized set
+    var position: Vec3, //@Synchronized get @Synchronized set
+    var rotation: Rotation, meshes: List<Mesh>) : CompoundMesh(meshes), Drawable {
 
 
     override fun draw() {
