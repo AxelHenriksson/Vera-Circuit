@@ -173,6 +173,8 @@ open class Shader(private val renderer: GameRenderer, val asset: String, protect
             }
         }
 
+
+
         override fun toString(): String {
             return "MTLShader(asset=${asset}, textures=$textures, colors=$colors)"
         }

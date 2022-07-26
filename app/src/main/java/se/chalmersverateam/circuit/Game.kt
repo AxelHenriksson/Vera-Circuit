@@ -74,7 +74,7 @@ class Game(context: Context, attr: AttributeSet): com.axehen.hengine.AbstractGam
             StaticMesh(
                 Vec3(10f, 10f, 0f),
                 Rotation(0f, 0f, 0f, 1f),
-                parseOBJMTL("models/Nogaro_Earth")
+                parseOBJMTL(this.context, this.renderer, "models/Nogaro_Earth")
             )
         }
 
@@ -94,6 +94,7 @@ class Game(context: Context, attr: AttributeSet): com.axehen.hengine.AbstractGam
     private var touchPrevDist: Float = 0f
 
     private var touchStickPos = Vec2(0f, 0f)
+
 
     override fun onTouchWorld(event: MotionEvent) {
         Log.d("UserInterface","onTouchWorld called with event: $event")
@@ -139,7 +140,7 @@ class Game(context: Context, attr: AttributeSet): com.axehen.hengine.AbstractGam
         touchPrevDist = dist
     }
 
-    val zoomSpeed = 3.0f
+    private val zoomSpeed = 3.0f
 
     /**
      * Renderer two finger pinch event response

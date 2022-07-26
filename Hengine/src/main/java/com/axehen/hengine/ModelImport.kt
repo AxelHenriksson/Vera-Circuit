@@ -1,6 +1,7 @@
 package com.axehen.hengine
 
 //import android.util.Log
+import android.content.Context
 import java.util.*
 
 class ModelImport {
@@ -9,7 +10,7 @@ class ModelImport {
 
         private data class Vertex(val pos: Vec3, val texCoord: Vec2, val normal: Vec3)
 
-        fun AbstractGame.parseOBJMTL(asset: String): List<Mesh> {
+        fun parseOBJMTL(context: Context, renderer: GameRenderer, asset: String): List<Mesh> {
             val objString = Utils.getStringFromAsset(context, "$asset.obj")
             //Log.d("ModelImport", "objString from asset: $asset, with ${objString.lines().size} lines")
             val mtlString = Utils.getStringFromAsset(context, "$asset.mtl")
@@ -72,7 +73,7 @@ class ModelImport {
                                     meshList.add(
                                         createMesh(
                                             faceList,
-                                            getShaderFromMTL(mtlString, activeMaterial)
+                                            getShaderFromMTL(mtlString, activeMaterial, context, renderer)
                                         )
                                     )
                                     faceList.clear()
@@ -83,16 +84,18 @@ class ModelImport {
                         }
                     }
                 }
-                meshList.add(createMesh(faceList, getShaderFromMTL(mtlString, activeMaterial)))
+                meshList.add(createMesh(faceList, getShaderFromMTL(mtlString, activeMaterial, context, renderer)))
             }
             return meshList//.also {
                 //Log.d("ModelImport","${objString.lines().size} lines parsed in OBJ file \"$asset\", ${posList.size} positions added, ${texCoordList.size} texCoords added, ${normalList.size} normals added, ${faceList.size} faces added" )
             //}
         }
 
-        private fun AbstractGame.getShaderFromMTL(
+        private fun getShaderFromMTL(
             mtlString: String,
-            activeMaterial: String
+            activeMaterial: String,
+            context: Context,
+            renderer: GameRenderer
         ): Shader {
             val lines = mtlString.lines()
 
@@ -129,12 +132,10 @@ class ModelImport {
                         uniform = "map_Kd"
                     ) }
                 )
-            )//.also{
-                //Log.d("ModelImport", "getShaderFromMTL returns: $it")
-            //}
+            )
         }
 
-        fun AbstractGame.parseOBJ(asset: String, scale: Float, shader: Shader): Mesh {
+        fun parseOBJ(context: Context, asset: String, scale: Float, shader: Shader): Mesh {
             val objString = Utils.getStringFromAsset(context, "$asset.obj")
 
             val posList = ArrayList<Vec3>()

@@ -8,7 +8,8 @@ import android.os.Looper
 import android.util.AttributeSet
 import android.view.MotionEvent
 
-@Suppress("LeakingThis")
+
+// parameter context and attr is required to use AbstractGame extending classes as android Views
 abstract class AbstractGame(context: Context, attr: AttributeSet) : GLSurfaceView(context) {
 
     protected val renderer: GameRenderer
@@ -19,8 +20,8 @@ abstract class AbstractGame(context: Context, attr: AttributeSet) : GLSurfaceVie
 
     init {
         // Create an OpenGL ES 3.0 context
-        setEGLContextClientVersion(3)
-        setEGLConfigChooser(8, 8, 8, 8, 16, 0)
+        this.setEGLContextClientVersion(3)
+        this.setEGLConfigChooser(8, 8, 8, 8, 16, 0)
 
         glEnable( GL_DEPTH_TEST )
         glDepthFunc( GL_LEQUAL )
@@ -77,5 +78,7 @@ abstract class AbstractGame(context: Context, attr: AttributeSet) : GLSurfaceVie
 
         return true
     }
+
+
 
 }
