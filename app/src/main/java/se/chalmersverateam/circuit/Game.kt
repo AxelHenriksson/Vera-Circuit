@@ -13,82 +13,87 @@ import com.axehen.hengine.Vec2
 
 class Game(context: Context, attr: AttributeSet): com.axehen.hengine.AbstractGame(context, attr) {
 
-    override fun initUI(): UserInterface {
-        return UserInterface(
-            this
-        ).also { ui ->
-            ui.scale = 150f
+    // Engine variables
+    override var tickPeriod: Long = 1000 / 60
 
-            val startButtonShader = Shader(
-                renderer,
-                "shaders/ui",
-                arrayListOf(
-                    AbstractTexture.Texture(
-                        getBitmap(
-                            context,
-                            "textures/ButtonIcon-GCN-Start-Pause.png"
-                        ), "tex0"
-                    ),
-                    AbstractTexture.Texture(
-                        getBitmap(
-                            context,
-                            "textures/ButtonIcon-GCN-Start-Pause_pressed.png"
-                        ), "texPressed"
+    // Game variables
+    private val cameraSpeed = 0.5f
+    private var charPos = Vec3(13.94f, 11.26f, 0.5f)
+
+    // Initialization variables
+    private val charLookFrom = Vec3(0f, -2f, 2f)
+    private val charZoom = 0.1f
+
+
+
+    init {
+        renderer.lookAt = charPos
+        renderer.lookFrom = charLookFrom    // Offset from lookAt from which to look
+        renderer.zoom = charZoom
+
+        setUI {
+            UserInterface(
+                this
+            ).also { ui ->
+                ui.scale = 150f
+
+                val startButtonShader = Shader(
+                    renderer,
+                    "shaders/ui",
+                    arrayListOf(
+                        AbstractTexture.Texture(
+                            getBitmap(
+                                context,
+                                "textures/ButtonIcon-GCN-Start-Pause.png"
+                            ), "tex0"
+                        ),
+                        AbstractTexture.Texture(
+                            getBitmap(
+                                context,
+                                "textures/ButtonIcon-GCN-Start-Pause_pressed.png"
+                            ), "texPressed"
+                        )
                     )
                 )
-            )
 
-            ui.buttons.add(UIRectangle.UIButton(
-                dimensions = Vec2(2f, 2f),
-                margins = Vec2(0f, 0f),
-                anchor = UIRectangle.Companion.UIAnchor.BOTTOM_MIDDLE,
-                shader = startButtonShader,
-                collidable = UIRectangle.CircleUICollidable(1f / 2f),
-                action = {
-                    Log.d("UserInterface.Button", "startButtonPressed")
-                }
-            )
-            )
+                ui.buttons.add(UIRectangle.UIButton(
+                    dimensions = Vec2(2f, 2f),
+                    margins = Vec2(0f, 0f),
+                    anchor = UIRectangle.Companion.UIAnchor.BOTTOM_MIDDLE,
+                    shader = startButtonShader,
+                    collidable = UIRectangle.CircleUICollidable(1f / 2f),
+                    action = {
+                        Log.d("UserInterface.Button", "startButtonPressed")
+                    }
+                )
+                )
+            }
         }
-    }
 
-    override fun initLevel(): List<Drawable> {
-        return arrayListOf(
+        loadDrawable {
             StaticMesh(
                 Vec3(10f, 10f, 0f),
                 Rotation(0f, 0f, 0f, 1f),
                 parseOBJMTL("models/Nogaro_Earth")
             )
-        )
-    }
-
-    init {
-        Log.d("GameInit", "Init of Game.kt started")
-        renderer.lookAt = Vec3(13.94f, 11.26f, 0.1f)
-        renderer.lookFrom = Vec3(0f, -2f, 2f)    // Offset from lookAt from which to look
-        renderer.zoom = 0.1f
-
-        tickPeriod = 1000 / 60
+        }
 
     }
 
-    private val speed = 0.5f
+
     override fun onTick() {
-        charPos += Vec3(stickPos * speed, 0f)
-        Log.d("Game.kt", "charPos = $charPos")
+        charPos += Vec3(touchStickPos * cameraSpeed, 0f)
         renderer.lookAt = charPos
         renderer.updateView()
         requestRender()
     }
 
 
-    private var previousX: Float = 0f
-    private var previousY: Float = 0f
-    private var prevDist: Float = 0f
+    private var touchPreviousX: Float = 0f
+    private var touchPreviousY: Float = 0f
+    private var touchPrevDist: Float = 0f
 
-    private var stickPos = Vec2(0f, 0f)
-
-    private var charPos = Vec3(13.94f, 11.26f, 0.5f)
+    private var touchStickPos = Vec2(0f, 0f)
 
     override fun onTouchWorld(event: MotionEvent) {
         Log.d("UserInterface","onTouchWorld called with event: $event")
@@ -102,24 +107,24 @@ class Game(context: Context, attr: AttributeSet): com.axehen.hengine.AbstractGam
                 //renderMode = RENDERMODE_CONTINUOUSLY
             }
             MotionEvent.ACTION_UP -> {
-                stickPos.x = 0f
-                stickPos.y = 0f
+                touchStickPos.x = 0f
+                touchStickPos.y = 0f
                 //renderMode = RENDERMODE_WHEN_DIRTY
             }
             MotionEvent.ACTION_MOVE -> {
 
-                val dx: Float = x - previousX
-                val dy: Float = y - previousY
-                val dDist: Float = dist - prevDist
+                val dx: Float = x - touchPreviousX
+                val dy: Float = y - touchPreviousY
+                val dDist: Float = dist - touchPrevDist
 
                 when (event.pointerCount) {
                     1 -> {
                         //touchSwipe(dx / height.toFloat(), dy / height.toFloat())
 
                         val radius = 0.25f
-                        stickPos.x += dx/(radius*height.toFloat())
-                        stickPos.y -= dy/(radius*height.toFloat())
-                        if (stickPos.length() > 1f) stickPos = stickPos.normalize()
+                        touchStickPos.x += dx/(radius*height.toFloat())
+                        touchStickPos.y -= dy/(radius*height.toFloat())
+                        if (touchStickPos.length() > 1f) touchStickPos = touchStickPos.normalize()
                     }
                     2 -> {
                         touchPinch(dDist / height.toFloat())
@@ -129,9 +134,9 @@ class Game(context: Context, attr: AttributeSet): com.axehen.hengine.AbstractGam
 
             }
         }
-        previousX = x
-        previousY = y
-        prevDist = dist
+        touchPreviousX = x
+        touchPreviousY = y
+        touchPrevDist = dist
     }
 
     val zoomSpeed = 3.0f

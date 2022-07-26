@@ -28,19 +28,13 @@ class MainActivity : AppCompatActivity() {
         }
 
 
-
-
-        Log.d("GameInit", "val gameFragment = GameFragment() called")
         val gameFragment = GameFragment()
         Handler(mainLooper).post {
-            Log.d("GameInit", "Inside mainLooper loop")
             supportFragmentManager
                 .beginTransaction()
                 .replace(R.id.main_frame, gameFragment)
                 .commit()
-            Log.d("GameInit", "Fragment swap committed")
         }
-        Log.d("GameInit", "val gameFragment = GameFragment() passed")
 
     }
 

@@ -11,7 +11,11 @@ import android.view.MotionEvent
 @Suppress("LeakingThis")
 abstract class AbstractGame(context: Context, attr: AttributeSet) : GLSurfaceView(context) {
 
-    val renderer: GameRenderer
+    protected val renderer: GameRenderer
+
+    val mainHandler by lazy { Handler(Looper.getMainLooper()) }
+    protected abstract var tickPeriod: Long  // Tick time period in milliseconds: 100 => 10 updates a second
+
 
     init {
         // Create an OpenGL ES 3.0 context
@@ -28,31 +32,24 @@ abstract class AbstractGame(context: Context, attr: AttributeSet) : GLSurfaceVie
         setRenderer(renderer)
 
         // Render the view only when there is a change in the drawing data
-        renderMode = RENDERMODE_WHEN_DIRTY  // TODO: Turn this back to RENDERMODE_WHEN_DIRTY
-
-        Thread {
-            renderer.userInterface = initUI()
-        }.start()
-
-        Thread {
-            renderer.addAll(initLevel())
-        }.start()
+        renderMode = RENDERMODE_WHEN_DIRTY
 
     }
 
-    protected open fun initUI(): UserInterface {
-        return UserInterface(this)
+    protected fun setUI(userInterfaceLambda: () -> UserInterface) {
+        Thread {
+            renderer.add(userInterfaceLambda.invoke())
+        }.start()
     }
 
-    protected open fun initLevel(): List<Drawable> {
-        return arrayListOf()
+    protected fun loadDrawable(drawableLoadLambda: () -> Drawable) {
+        Thread {
+            renderer.add(drawableLoadLambda.invoke())
+        }.start()
     }
 
     // Game Loop
-    protected var tickPeriod: Long = 100  // Tick preiod in milliseconds: 100 => 10 updates a second
     protected abstract fun onTick()
-
-    val mainHandler by lazy { Handler(Looper.getMainLooper()) }
 
     private val tickRunnable = object : Runnable {
         override fun run() {
@@ -79,10 +76,6 @@ abstract class AbstractGame(context: Context, attr: AttributeSet) : GLSurfaceVie
         }
 
         return true
-    }
-
-    protected fun add(drawable: Drawable) {
-        renderer.add(drawable)
     }
 
 }
